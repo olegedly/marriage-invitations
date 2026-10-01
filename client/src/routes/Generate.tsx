@@ -82,7 +82,7 @@ export function Generate(props: { countries: CountryZone[]; onGenerated: () => v
         <input
           type="text"
           value={guests()}
-          placeholder="e.g. Hanna Bekele — or — Maria and Juan"
+          placeholder="e.g. Loimie — or — Máté and Szandra"
           maxlength={200}
           required
           onInput={(e) => setGuests(e.currentTarget.value)}
