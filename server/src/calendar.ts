@@ -9,7 +9,6 @@
  */
 
 import { EVENT } from './event.js';
-import { localTime } from './timezone.js';
 
 /** Event length assumed for the calendar entry. */
 const DURATION_MINUTES = 60;
@@ -125,13 +124,4 @@ export function buildGoogleCalendarUrl(): string {
  */
 export function calendarUrl(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, '')}/api/calendar.ics`;
-}
-
-
-/** A human-readable summary of the event in the guest's language. */
-export function eventSummaryForGuest(
-  zone: string,
-  language: Parameters<typeof localTime>[1],
-): string {
-  return localTime(zone, language).formatted;
 }

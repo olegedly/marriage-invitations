@@ -1,6 +1,7 @@
-import { createMemo, createSignal, Show } from 'solid-js';
+import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import { CountryPicker } from '../components/CountryPicker.js';
-import { generateInvitation } from '../api.js';
+import { Preview } from '../components/Preview.js';
+import { generateInvitation, previewInvitation } from '../api.js';
 import {
   LANGUAGE_LABELS,
   type CountryZone,
@@ -27,6 +28,10 @@ export function Generate(props: { countries: CountryZone[]; onGenerated: () => v
   const [error, setError] = createSignal<string | null>(null);
   const [done, setDone] = createSignal<string | null>(null);
 
+  const [preview, setPreview] = createSignal<{ markdown: string; filename: string } | null>(null);
+  const [previewError, setPreviewError] = createSignal<string | null>(null);
+  const [previewing, setPreviewing] = createSignal(false);
+
   const NOTE_LIMIT = 400;
   const noteLength = createMemo(() => personalNote().trim().length);
   const noteTooLong = createMemo(() => noteLength() > NOTE_LIMIT);
@@ -40,6 +45,80 @@ export function Generate(props: { countries: CountryZone[]; onGenerated: () => v
 
   const canSubmit = createMemo(
     () => guests().trim().length > 0 && !noteTooLong() && !busy(),
+  );
+
+  /** The request the preview renders, or null when there is nothing to show. */
+  function previewPayload(): GenerationRequest | null {
+    if (guests().trim().length === 0 || noteTooLong()) return null;
+    return {
+      guests: guests().trim(),
+      language: language(),
+      number: number(),
+      register: register(),
+      gender: gender(),
+      countryCode: countryCode(),
+      personalNote: personalNote().trim() || null,
+    };
+  }
+
+  /**
+   * Live preview.
+   *
+   * Solid 2 splits an effect into a compute half (what it tracks) and an effect
+   * half (what it does). The compute half returns the serialised request, so
+   * the effect runs when something the invitation actually says changes — and
+   * not when an unrelated signal is written. The cleanup it returns cancels a
+   * pending debounce and aborts an in-flight request, so a slower earlier
+   * response can never overwrite a newer one.
+   *
+   * Typing is debounced, so a guest name is rendered once the operator pauses,
+   * not once per keystroke.
+   *
+   * A failure is reported in the preview panel and never blocks the form: the
+   * usual cause is a country generation would reject with the same message.
+   */
+  createEffect(
+    () => {
+      const payload = previewPayload();
+      return payload ? JSON.stringify(payload) : null;
+    },
+    (key) => {
+      if (key === null) {
+        setPreview(null);
+        setPreviewError(null);
+        setPreviewing(false);
+        return;
+      }
+
+      const payload = JSON.parse(key) as GenerationRequest;
+      const controller = new AbortController();
+
+      const timer = setTimeout(() => {
+        setPreviewing(true);
+        setPreviewError(null);
+
+        void previewInvitation(payload)
+          .then((result) => {
+            if (controller.signal.aborted) return;
+            setPreview(result);
+          })
+          .catch((err: unknown) => {
+            if (controller.signal.aborted) return;
+            setPreview(null);
+            setPreviewError(
+              err instanceof Error ? err.message : 'Could not render the preview',
+            );
+          })
+          .finally(() => {
+            if (!controller.signal.aborted) setPreviewing(false);
+          });
+      }, 250);
+
+      return () => {
+        clearTimeout(timer);
+        controller.abort();
+      };
+    },
   );
 
   async function submit(e: Event) {
@@ -72,7 +151,8 @@ export function Generate(props: { countries: CountryZone[]; onGenerated: () => v
   }
 
   return (
-    <form class="card form" onSubmit={submit}>
+    <div class="generate">
+      <form class="card form" onSubmit={submit}>
       <h2>New invitation</h2>
 
       <label class="field">
@@ -218,6 +298,15 @@ export function Generate(props: { countries: CountryZone[]; onGenerated: () => v
       <Show when={error()}>
         <p class="error">{error()}</p>
       </Show>
-    </form>
+      </form>
+
+      <Preview
+        markdown={preview()?.markdown ?? null}
+        filename={preview()?.filename ?? null}
+        loading={previewing()}
+        error={previewError()}
+        idle={previewPayload() === null}
+      />
+    </div>
   );
 }

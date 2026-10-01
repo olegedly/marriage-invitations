@@ -1,6 +1,12 @@
 /** Thin API client. Keeps fetch details out of the components. */
 
-import type { CountryZone, GenerationRequest, HistoryDetail, HistoryEntry } from './types.js';
+import type {
+  CountryZone,
+  GenerationRequest,
+  HistoryDetail,
+  HistoryEntry,
+  PreviewResult,
+} from './types.js';
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -20,6 +26,24 @@ export async function fetchHistory(): Promise<HistoryEntry[]> {
 
 export async function fetchHistoryEntry(id: string): Promise<HistoryDetail> {
   return json<HistoryDetail>(await fetch(`/api/history/${encodeURIComponent(id)}`));
+}
+
+/**
+ * Render the invitation's text, without generating a PDF.
+ *
+ * Returns the same markdown the PDF would be built from, so what the operator
+ * approves here is what the guest receives. Nothing is saved to history.
+ */
+export async function previewInvitation(
+  input: GenerationRequest,
+): Promise<PreviewResult> {
+  const res = await fetch('/api/preview', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  return json<PreviewResult>(res);
 }
 
 /**

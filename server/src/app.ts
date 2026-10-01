@@ -144,6 +144,35 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     reply.status(500).send({ error: 'Failed to generate the invitation' });
   });
 
+  /**
+   * Render the invitation's text without producing a PDF.
+   *
+   * This exists so the wording can be read and approved before a PDF is
+   * committed. It is deliberately the same renderInvitation call the PDF path
+   * makes, so a preview can never disagree with the artifact it previews — a
+   * second template here would mean approving copy the guest never receives.
+   *
+   * Nothing is written to history: a preview is not a generation, and drafts
+   * would bury the invitations that were actually sent.
+   */
+  app.post('/api/preview', async (request, reply) => {
+    const result = validate(request.body);
+    if (!result.ok) {
+      return reply.status(400).send({ error: result.message });
+    }
+
+    try {
+      const rendered = renderInvitation(result.value, {
+        baseUrl: requestOrigin(request),
+      });
+      return reply.send(rendered);
+    } catch (error) {
+      return reply
+        .status(400)
+        .send({ error: error instanceof Error ? error.message : 'Invalid input' });
+    }
+  });
+
   app.post('/api/generate', async (request, reply) => {
     const result = validate(request.body);
     if (!result.ok) {

@@ -4,8 +4,10 @@ A small web app for generating personalised wedding invitations as PDFs, in
 English, Russian and Bisaya (Cebuano).
 
 Enter a guest name, pick a language and a tone, choose the guest's country, add
-an optional personal line — and download a PDF ready to send. Every generation
-is kept in a history you can revisit and re-download.
+an optional personal line — and download a PDF ready to send. The invitation's
+text updates in a live preview as you fill the form, so the wording can be read
+before anything is generated. Every generation is kept in a history you can
+revisit and re-download.
 
 Oleg & Rose — 13 October 2026, 18:10 EEST (Oleg's time, Romania), online.
 Rose is in the Philippines, which is why the ceremony is online.
@@ -15,7 +17,8 @@ Rose is in the Philippines, which is why the ceremony is online.
 ## How it works
 
 ```
-Browser (SolidJS SPA — configuration only, no preview)
+Browser (SolidJS SPA)
+   │  POST /api/preview → markdown only, for reading         (no PDF, no history)
    │  POST /api/generate
    ▼
 Fastify server
@@ -28,6 +31,38 @@ PDF bytes → download, and a record saved to SQLite history
 The markdown is the record of what was said; the PDF is what it looks like. The
 stylesheet at `server/src/templates/invitation.css` is used only for generation
 and is not shared with the UI.
+
+## The text preview
+
+The form shows the invitation's **text contents**, live, before anything is
+generated. It exists so the wording can be read and approved rather than
+discovered in a PDF — a typo in a guest's name is cheap to fix here.
+
+Two deliberate limits:
+
+- **Text, not layout.** The preview says what the invitation *says*, never what
+  it looks like. Typography and layout belong to the PDF's stylesheet, which the
+  UI does not share; if you are reviewing spacing, the preview is not the tool.
+- **Not a second template.** `POST /api/preview` calls the same
+  `renderInvitation()` the PDF path calls. There is no preview-only copy, so the
+  preview cannot drift from the artifact — approving text here approves the text
+  the guest receives.
+
+`POST /api/preview` is therefore the one endpoint that renders text without
+touching a browser or the database: it returns `{ markdown, filename }`, saves
+nothing to history, and validates input exactly as generation does. Previewing
+is not generating, and a history full of abandoned drafts would bury the
+invitations that were actually sent.
+
+The client parses that markdown into readable blocks (`client/src/preview-text.ts`).
+It is not a general markdown parser: it handles exactly the constructs the
+renderer emits, and anything it does not recognise passes through as literal
+text, so copy is never silently hidden. Links render as their own label, because
+the calendar link's URL is an absolute address built from the request origin and
+a raw URL would interrupt the prose.
+
+The calendar link in a preview is built from the request origin, exactly as in a
+PDF (see below), so it is the link the guest would actually get.
 
 ## Requirements
 
@@ -160,11 +195,13 @@ form never implies a distinction the language does not make.
 npm test
 ```
 
-135 tests across four seams:
+143 tests across five seams:
 
 - `renderInvitation(input)` — pure markdown generation: languages, timezones,
   filenames, personal note placement
 - HTTP API via Fastify `inject()` — validation, status codes, PDF responses
+- Text preview — same API surface, but built with **no PDF renderer injected**,
+  so a preview that reached for a browser would fail the test
 - PDF adapter — Puppeteer is injected, so only one test launches a browser
 - History — real SQLite file per test, never mocked
 
@@ -226,8 +263,9 @@ server/
 client/
   src/
     App.tsx, api.ts, types.ts
+    preview-text.ts   ← markdown → readable text for the preview
     routes/           ← Generate, History
-    components/       ← CountryPicker
+    components/       ← CountryPicker, Preview
 ```
 
 ## Notes for whoever picks this up next
