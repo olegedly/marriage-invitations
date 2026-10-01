@@ -123,18 +123,18 @@ describe('Cebuano address forms', () => {
     );
 
     // For one respected person, "kamo" is polite while "ka" is too familiar.
-    // The noun stays singular: we are addressing one guest, politely.
     expect(markdown).toContain('makauban kamo namo');
-    expect(markdown).toContain('bisita');
     // Word-boundary match so the "ka" inside "kamo" is not a false positive.
     expect(markdown).not.toMatch(/makauban ka\b(?!mo)/);
   });
 
-  test('plural greeting uses the plural noun', () => {
-    const { markdown } = render(
-      input({ language: 'ceb', number: 'plural' }),
-    );
-    expect(markdown).toContain('mga bisita');
+  test('plural greeting uses the plural form, singular the singular', () => {
+    const plural = render(input({ language: 'ceb', number: 'plural' })).markdown;
+    const singular = render(input({ language: 'ceb', number: 'singular' })).markdown;
+
+    expect(plural).toContain('Minahal nga mga');
+    expect(singular).toContain('Minahal nga');
+    expect(singular).not.toContain('Minahal nga mga');
   });
 
   test('ignores gender, which Cebuano does not mark', () => {
@@ -156,15 +156,26 @@ describe('Cebuano address forms', () => {
 });
 
 describe('English address forms', () => {
-  test('plural greeting addresses guests directly', () => {
+  test('the greeting runs straight into the guest name', () => {
     const { markdown } = render(input({ language: 'en', number: 'plural' }));
-    expect(markdown).toContain('Dear guests,');
+    expect(markdown).toContain('Dear **Guest Name**');
   });
 
-  test('informal singular omits the word guest', () => {
-    const { markdown } = render(
-      input({ language: 'en', number: 'singular', register: 'informal' }),
-    );
-    expect(markdown).toContain('Dear **Guest Name**');
+  test('the greeting names no noun of its own', () => {
+    // "Dear guests, **Hanna Bekele**" says guest twice and leaves the comma
+    // stranded before the name; the name alone is the noun.
+    const { markdown } = render(input({ language: 'en', number: 'plural' }));
+
+    expect(markdown).not.toContain('guests');
+    expect(markdown).not.toContain('friends');
+    expect(markdown).not.toContain('Dear,');
+  });
+
+  test('register does not change the English greeting', () => {
+    const formal = render(input({ language: 'en', register: 'formal' })).markdown;
+    const informal = render(input({ language: 'en', register: 'informal' })).markdown;
+
+    expect(formal).toContain('Dear **Guest Name**');
+    expect(informal).toContain('Dear **Guest Name**');
   });
 });

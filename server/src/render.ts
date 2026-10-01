@@ -73,31 +73,37 @@ interface AddressCopy {
 }
 
 /**
- * Greeting line. Russian varies by number, register and gender; the plural form
- * collapses gender entirely. English and Cebuano ignore gender.
+ * Greeting line, returned WITHOUT a trailing comma.
+ *
+ * The greeting is an adjective (or a bare salutation) that the guest's own name
+ * completes: "Dear **Hanna Bekele**". A trailing noun such as "guests" would
+ * repeat what the name already supplies, and the comma in front of it would
+ * then be a comma with nothing after it. The renderer adds the name, so the
+ * punctuation belongs to the name, not to this string.
+ *
+ * Russian varies by number, register and gender; the plural form collapses
+ * gender entirely. English and Cebuano ignore gender.
  */
 function greeting(input: GenerationInput): string {
   const { language, number, register, gender } = input;
 
   if (language === 'ru') {
     if (number === 'plural') {
-      return register === 'formal' ? 'Уважаемые гости,' : 'Дорогие друзья,';
+      return register === 'formal' ? 'Уважаемые' : 'Дорогие';
     }
     if (register === 'formal') {
-      return gender === 'feminine' ? 'Уважаемая гостья,' : 'Уважаемый гость,';
+      return gender === 'feminine' ? 'Уважаемая' : 'Уважаемый';
     }
-    return gender === 'feminine' ? 'Дорогая,' : 'Дорогой,';
+    return gender === 'feminine' ? 'Дорогая' : 'Дорогой';
   }
 
   if (language === 'ceb') {
-    // Cebuano has no grammatical gender. `kamo` is correct for several people
-    // and is also the polite form for one person.
-    if (number === 'plural') return 'Minahal nga mga bisita,';
-    return register === 'formal' ? 'Minahal nga bisita,' : 'Minahal,';
+    // Cebuano has no grammatical gender. To one person, formal and informal
+    // address the same way, so register does not change the greeting.
+    return number === 'plural' ? 'Minahal nga mga' : 'Minahal nga';
   }
 
-  if (number === 'plural') return register === 'formal' ? 'Dear guests,' : 'Dear friends,';
-  return register === 'formal' ? 'Dear guest,' : 'Dear';
+  return 'Dear';
 }
 
 const YOU: Record<Language, { singular: string; plural: string }> = {
@@ -133,9 +139,9 @@ const CALENDAR_HINT: Record<Language, string> = {
  */
 const INTRO: Record<Language, Record<'formalSingular' | 'informalSingular' | 'plural', string>> = {
   en: {
-    formalSingular: 'We would be honoured to have you with us as we say our vows.',
+    formalSingular: 'We would be honored to have you with us as we say our vows.',
     informalSingular: 'We would love to have you with us as we say our vows.',
-    plural: 'We would be honoured to have you all with us as we say our vows.',
+    plural: 'We would love to have you with us as we say our vows.',
   },
   ru: {
     formalSingular: 'Мы будем счастливы видеть вас рядом, когда мы произнесём наши клятвы.',
