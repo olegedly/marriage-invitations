@@ -18,8 +18,14 @@ const routes = defineRoutes([
 
 const Router = createRouter({ routes });
 
-/** Plain anchors are used for navigation; this highlights the active one. */
-function NavLink(props: { href: string; children: string }) {
+/**
+ * Plain anchors are used for navigation; this highlights the active one.
+ *
+ * The brand reuses this so the home link behaves identically to the nav links:
+ * modified clicks still open a new tab, and routing stays in the router.
+ * `active` is merged with any caller-supplied class rather than replacing it.
+ */
+function NavLink(props: { href: string; children: string; class?: string }) {
   const location = useLocation();
   const active = createMemo(() => location.pathname === props.href);
   const navigate = useNavigate();
@@ -27,7 +33,7 @@ function NavLink(props: { href: string; children: string }) {
   return (
     <a
       href={props.href}
-      class={{ active: active() }}
+      class={[props.class, { active: active() }]}
       onClick={(e) => {
         // Let modified clicks open a new tab as usual.
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
@@ -72,7 +78,7 @@ export function App() {
       {() => (
         <div class="app">
           <header class="topbar">
-            <span class="brand">Wedding Invitations</span>
+            <NavLink href="/" class="brand">Wedding Invitations</NavLink>
             <nav>
               <NavLink href="/">Generate</NavLink>
               <NavLink href="/history">History</NavLink>
