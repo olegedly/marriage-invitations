@@ -146,7 +146,7 @@ explicit selectors, plus gender where it matters:
 
 | Language | Mechanism |
 | --- | --- |
-| English | Register only ("Dear guest" / "Dear friends") |
+| English | No variation — the greeting is just "Dear"; the guest's own name supplies the noun |
 | Russian | Number, register **and** gender for singular; plural collapses gender |
 | Cebuano | Number only — no grammatical gender. `kamo` is plural *and* the polite singular |
 
@@ -231,7 +231,7 @@ client/
   tzdata 2026d, not UTC+1 as is often assumed — offsets are computed, not
   remembered.
 - **Filename slugs keep non-Latin characters** so distinct Cyrillic guests never
-  collide. Latin names are de-accented and joined (`Hanna Bekele` →
-  `Invitation_HannaBekele_EN.pdf`).
+  collide. Latin names are de-accented and joined (`Máté and Szandra` →
+  `Invitation_MateAndSzandra_EN.pdf`).
 - **Russian copy is grammatically correct but should be proofread** by a native
   speaker, especially the informal forms. Cebuano likewise.
