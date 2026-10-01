@@ -12,7 +12,7 @@ import { render } from './support/render.js';
 
 function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
   return {
-    guests: 'Hanna Bekele',
+    guests: 'Loimie',
     language: 'en',
     number: 'singular',
     register: 'formal',

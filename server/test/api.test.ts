@@ -23,7 +23,7 @@ const fakePdf: PdfRenderer = async () => Buffer.from('%PDF-1.4 stub content');
 
 function validBody(overrides: Record<string, unknown> = {}) {
   return {
-    guests: 'Hanna Bekele',
+    guests: 'Loimie',
     language: 'en',
     number: 'singular',
     register: 'formal',
@@ -57,7 +57,7 @@ describe('POST /api/generate', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('application/pdf');
     expect(res.headers['content-disposition']).toContain(
-      'Invitation_HannaBekele_EN.pdf',
+      'Invitation_Loimie_EN.pdf',
     );
     expect(res.rawPayload.subarray(0, 5).toString()).toBe('%PDF-');
   });
@@ -87,7 +87,7 @@ describe('POST /api/generate', () => {
     const entries = res.json();
 
     expect(entries).toHaveLength(1);
-    expect(entries[0].guests).toBe('Hanna Bekele');
+    expect(entries[0].guests).toBe('Loimie');
   });
 
   test('rejects a request with no guest name', async () => {
@@ -192,7 +192,7 @@ describe('GET /api/history/:id/pdf', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('application/pdf');
-    expect(res.headers['content-disposition']).toContain('Invitation_HannaBekele_EN.pdf');
+    expect(res.headers['content-disposition']).toContain('Invitation_Loimie_EN.pdf');
   });
 
   test('404s for an unknown id', async () => {

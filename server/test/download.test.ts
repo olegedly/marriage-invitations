@@ -8,9 +8,9 @@ import { contentDisposition } from '../src/download.js';
  */
 describe('content-disposition', () => {
   test('keeps an ASCII filename as-is', () => {
-    const header = contentDisposition('Invitation_HannaBekele_EN.pdf');
+    const header = contentDisposition('Invitation_Loimie_EN.pdf');
 
-    expect(header).toContain('filename="Invitation_HannaBekele_EN.pdf"');
+    expect(header).toContain('filename="Invitation_Loimie_EN.pdf"');
   });
 
   test('contains no non-ASCII characters for a Cyrillic filename', () => {

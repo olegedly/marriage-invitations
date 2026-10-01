@@ -162,7 +162,7 @@ describe('English address forms', () => {
   });
 
   test('the greeting names no noun of its own', () => {
-    // "Dear guests, **Hanna Bekele**" says guest twice and leaves the comma
+    // "Dear guests, **Loimie**" says guest twice and leaves the comma
     // stranded before the name; the name alone is the noun.
     const { markdown } = render(input({ language: 'en', number: 'plural' }));
 

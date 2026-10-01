@@ -66,7 +66,7 @@ describe('real PDF output', () => {
   test(
     'produces a real PDF containing the guest name',
     async () => {
-      const md = '# Our Wedding\n\nDear guest, **Hanna Bekele**\n\nПриглашение Олег';
+      const md = '# Our Wedding\n\nDear **Loimie**\n\nПриглашение Олег';
       const pdf = await generatePdf(md);
 
       expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');

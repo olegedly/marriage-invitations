@@ -34,10 +34,10 @@ const FILENAME_LANG: Record<Language, string> = { en: 'EN', ru: 'RU', ceb: 'CEB'
 /**
  * Deterministic, filesystem-safe filename.
  *
- * Latin text is de-accented and joined without spaces ("Hanna Bekele" ->
- * "HannaBekele"). Scripts that have no ASCII form, such as Cyrillic, are kept
- * as-is rather than stripped, so distinct guests never collide on one name.
- * Only characters that are genuinely unsafe in a filename are removed.
+ * Latin text is de-accented and joined without spaces ("Máté and Szandra" ->
+ * "MateAndSzandra"). Scripts that have no ASCII form, such as Cyrillic, are
+ * kept as-is rather than stripped, so distinct guests never collide on one
+ * name. Only characters that are genuinely unsafe in a filename are removed.
  */
 export function invitationFilename(guests: string, language: Language): string {
   const cleaned = guests
@@ -76,7 +76,7 @@ interface AddressCopy {
  * Greeting line, returned WITHOUT a trailing comma.
  *
  * The greeting is an adjective (or a bare salutation) that the guest's own name
- * completes: "Dear **Hanna Bekele**". A trailing noun such as "guests" would
+ * completes: "Dear **Loimie**". A trailing noun such as "guests" would
  * repeat what the name already supplies, and the comma in front of it would
  * then be a comma with nothing after it. The renderer adds the name, so the
  * punctuation belongs to the name, not to this string.

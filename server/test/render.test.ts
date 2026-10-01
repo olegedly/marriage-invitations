@@ -11,7 +11,7 @@ import type { GenerationInput } from '../src/render.js';
 
 function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
   return {
-    guests: 'Hanna Bekele',
+    guests: 'Loimie',
     language: 'en',
     number: 'singular',
     register: 'formal',
@@ -25,7 +25,7 @@ describe('renderInvitation — English, one guest, formal', () => {
   test('addresses the guest by name and produces markdown', () => {
     const { markdown } = render(input());
 
-    expect(markdown).toContain('Hanna Bekele');
+    expect(markdown).toContain('Loimie');
     expect(markdown).toContain('Oleg');
     expect(markdown).toContain('Rose');
   });
@@ -46,7 +46,15 @@ describe('renderInvitation — English, one guest, formal', () => {
   });
 
   test('derives a deterministic, filesystem-safe filename', () => {
-    expect(render(input()).filename).toBe('Invitation_HannaBekele_EN.pdf');
+    expect(render(input()).filename).toBe('Invitation_Loimie_EN.pdf');
+  });
+
+  test('de-accents Hungarian guest names into the filename', () => {
+    // The invited guests are Hungarian, so the slug path that strips
+    // diacritics is exercised by real names rather than an ASCII stand-in.
+    const { filename } = render(input({ guests: 'Máté and Szandra' }));
+
+    expect(filename).toBe('Invitation_MateAndSzandra_EN.pdf');
   });
 
   test('sanitises characters that are unsafe in filenames', () => {

@@ -4,7 +4,7 @@ import { render } from './support/render.js';
 import type { GenerationInput } from '../src/render.js';
 
 const input = (over: Partial<GenerationInput> = {}): GenerationInput => ({
-  guests: 'Hanna Bekele',
+  guests: 'Loimie',
   language: 'en',
   number: 'singular',
   register: 'formal',

@@ -24,7 +24,7 @@ export function render(
 /** The standard guest input used across the render test suites. */
 export function guestInput(overrides: Partial<GenerationInput> = {}): GenerationInput {
   return {
-    guests: 'Hanna Bekele',
+    guests: 'Loimie',
     language: 'en',
     number: 'singular',
     register: 'formal',

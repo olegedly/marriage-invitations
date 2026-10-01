@@ -19,7 +19,7 @@ let history: History;
 
 function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
   return {
-    guests: 'Hanna Bekele',
+    guests: 'Loimie',
     language: 'en',
     number: 'singular',
     register: 'formal',
@@ -51,7 +51,7 @@ describe('generation history', () => {
 
     const entries = history.list();
     expect(entries).toHaveLength(1);
-    expect(entries[0]!.guests).toBe('Hanna Bekele');
+    expect(entries[0]!.guests).toBe('Loimie');
     expect(entries[0]!.language).toBe('en');
   });
 
