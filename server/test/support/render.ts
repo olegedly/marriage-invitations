@@ -21,7 +21,14 @@ export function render(
   return renderInvitation(input, { baseUrl });
 }
 
-/** The standard guest input used across the render test suites. */
+/**
+ * The standard guest input used across the render test suites.
+ *
+ * Each suite used to carry its own copy of this object, which is how one of
+ * them quietly lost the required `gender` field: the tests were not
+ * typechecked, so nothing caught it. Sharing one definition keeps them
+ * honest, and tests are typechecked now (see tsconfig.test.json).
+ */
 export function guestInput(overrides: Partial<GenerationInput> = {}): GenerationInput {
   return {
     guests: 'Loimie',

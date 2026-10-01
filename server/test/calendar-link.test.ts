@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { renderInvitation } from '../src/render.js';
-import type { GenerationInput } from '../src/render.js';
+import { renderInvitation, type GenerationInput } from '../src/render.js';
+import { guestInput } from './support/render.js';
 
 /**
  * Seam T1c: the calendar link inside an invitation.
@@ -16,16 +16,9 @@ import type { GenerationInput } from '../src/render.js';
  * and silently wrong everywhere else.
  */
 
-const base = (over: Partial<GenerationInput> = {}): GenerationInput => ({
-  guests: 'Loimie',
-  language: 'en',
-  number: 'singular',
-  register: 'formal',
-  gender: 'neutral',
-  countryCode: 'PH',
-  personalNote: null,
-  ...over,
-});
+/** Philippines, so the fixture is a guest in a different zone from the couple. */
+const base = (over: Partial<GenerationInput> = {}): GenerationInput =>
+  guestInput({ countryCode: 'PH', ...over });
 
 describe('calendar link in the invitation', () => {
   test('is absolute against the origin the invitation was requested from', () => {

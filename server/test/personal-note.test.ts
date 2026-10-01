@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { GenerationInput } from '../src/render.js';
-import { render } from './support/render.js';
+import { guestInput as input, render } from './support/render.js';
 
 /**
  * Seam T1, third slice: the optional personal note.
@@ -9,19 +8,6 @@ import { render } from './support/render.js';
  * structural guarantees (it is one block, it sits between intro and details,
  * it is omitted cleanly when absent) rather than wording.
  */
-
-function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
-  return {
-    guests: 'Loimie',
-    language: 'en',
-    number: 'singular',
-    register: 'formal',
-    gender: 'neutral',
-    countryCode: 'RO',
-    personalNote: null,
-    ...overrides,
-  };
-}
 
 describe('personal note', () => {
   test('is omitted entirely when absent', () => {

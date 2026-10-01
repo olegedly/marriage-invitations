@@ -160,7 +160,7 @@ form never implies a distinction the language does not make.
 npm test
 ```
 
-81 tests across four seams:
+135 tests across four seams:
 
 - `renderInvitation(input)` — pure markdown generation: languages, timezones,
   filenames, personal note placement
@@ -169,6 +169,11 @@ npm test
 - History — real SQLite file per test, never mocked
 
 The one test that launches Chromium is the proof that real PDF bytes come out.
+
+`npm test` typechecks the tests before running them (`tsconfig.test.json`).
+The build config only covers `src/`, so without this step a test could pass at
+runtime while quietly violating a type — which is exactly how a required
+`gender` field went missing from one suite's fixture.
 
 ## Deployment
 

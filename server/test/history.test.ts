@@ -11,24 +11,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { openHistory, type History } from '../src/history.js';
-import type { GenerationInput } from '../src/render.js';
-import { render } from './support/render.js';
+import { guestInput as input, render } from './support/render.js';
 
 let dir: string;
 let history: History;
-
-function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
-  return {
-    guests: 'Loimie',
-    language: 'en',
-    number: 'singular',
-    register: 'formal',
-    gender: 'neutral',
-    countryCode: 'RO',
-    personalNote: null,
-    ...overrides,
-  };
-}
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'invitations-'));

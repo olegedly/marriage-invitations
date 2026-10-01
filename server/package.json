@@ -8,8 +8,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node dist/index.js",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "tsc -p tsconfig.test.json && vitest run",
+    "test:watch": "vitest",
+    "typecheck:tests": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "@fastify/static": "10.1.5",

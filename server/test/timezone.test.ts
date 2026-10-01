@@ -1,18 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { COUNTRY_ZONES, localTime } from '../src/timezone.js';
-import { render } from './support/render.js';
+import { guestInput, render } from './support/render.js';
 import type { GenerationInput } from '../src/render.js';
 
-const input = (over: Partial<GenerationInput> = {}): GenerationInput => ({
-  guests: 'Loimie',
-  language: 'en',
-  number: 'singular',
-  register: 'formal',
-  gender: 'neutral',
-  countryCode: 'PH',
-  personalNote: null,
-  ...over,
-});
+/** Philippines by default: the point of this suite is a guest zone that is not the couple's. */
+const input = (over: Partial<GenerationInput> = {}): GenerationInput =>
+  guestInput({ countryCode: 'PH', ...over });
 
 /**
  * Seam T1b: guest-facing local times.

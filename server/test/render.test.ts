@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { render, guestInput } from './support/render.js';
-import type { GenerationInput } from '../src/render.js';
+import { render, guestInput as input } from './support/render.js';
 
 /**
  * Seam T1: render(input) -> { markdown, filename }
@@ -8,18 +7,6 @@ import type { GenerationInput } from '../src/render.js';
  * Pure function. No PDF, no database, no HTTP. Expected values below are
  * worked examples taken from the spec, not recomputed the way the code does.
  */
-
-function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
-  return {
-    guests: 'Loimie',
-    language: 'en',
-    number: 'singular',
-    register: 'formal',
-    countryCode: 'RO',
-    personalNote: null,
-    ...overrides,
-  };
-}
 
 describe('renderInvitation — English, one guest, formal', () => {
   test('addresses the guest by name and produces markdown', () => {
