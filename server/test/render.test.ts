@@ -75,7 +75,7 @@ describe('renderInvitation — English, one guest, formal', () => {
     expect(a.filename).not.toBe(b.filename);
   });
 
-  test('shows exactly one time, labelled with its zone', () => {
+  test('shows exactly one time, labeled with its zone', () => {
     const { markdown } = render(input());
 
     // Base instant is 18:10 EEST; Romania guest sees the home time.

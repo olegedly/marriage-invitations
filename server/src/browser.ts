@@ -62,7 +62,7 @@ export function discoverBrowser(options: DiscoverOptions = {}): string | undefin
 
   const explicit = env.PUPPETEER_EXECUTABLE_PATH;
   if (explicit && existsSync(explicit)) return explicit;
-  // Honour an explicit path even if the check is inconclusive (e.g. a bind
+  // Honor an explicit path even if the check is inconclusive (e.g. a bind
   // mount that appears later); puppeteer will give a clearer error than we can.
   if (explicit) return explicit;
 

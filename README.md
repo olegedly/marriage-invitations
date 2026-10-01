@@ -89,7 +89,7 @@ configuration is needed. A PDF has no base URL of its own, so the link must be
 absolute; deriving it per request keeps it correct on every host the app is
 served from, without a rebuild.
 
-Behind a reverse proxy, `X-Forwarded-Host` and `X-Forwarded-Proto` are honoured,
+Behind a reverse proxy, `X-Forwarded-Host` and `X-Forwarded-Proto` are honored,
 so an internal service name can never leak into a guest-facing link.
 
 `PUBLIC_BASE_URL` overrides this when neither header is trustworthy.
@@ -100,7 +100,7 @@ The couple are in **two countries** — Oleg in Romania, Rose in the Philippines
 and the wedding is online for exactly that reason. There is no shared location
 and therefore no single "the couple's time"; the invitations do not imply one.
 
-Each invitation shows **exactly one time**: the guest's own, labelled with the
+Each invitation shows **exactly one time**: the guest's own, labeled with the
 zone it is based on and the offset — for example:
 
 ```

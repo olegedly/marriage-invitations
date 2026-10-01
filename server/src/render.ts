@@ -216,7 +216,7 @@ export function renderInvitation(
   const zone = country.zone;
   const time = localTime(zone, language);
 
-  // One time only: the guest's own, labelled with the zone it is based on.
+  // One time only: the guest's own, labeled with the zone it is based on.
   //
   // A guest is told which zone THEIR time is in and nothing else. There is no
   // "the couple's time": the groom is in Romania and the bride is in the

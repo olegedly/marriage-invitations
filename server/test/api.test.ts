@@ -260,7 +260,7 @@ describe('calendar link origin', () => {
     expect(stored.markdown).toContain('http://our-wedding.example/api/calendar.ics');
   });
 
-  test('honours X-Forwarded-* when behind a reverse proxy', async () => {
+  test('honors X-Forwarded-* when behind a reverse proxy', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/generate',

@@ -3,7 +3,7 @@
  *
  * Records are addressed by their own interface — save, list, load — never by
  * issuing SQL in the tests. A real SQLite file is used (temp per test) rather
- * than a mock, so persistence behaviour is genuinely exercised.
+ * than a mock, so persistence behavior is genuinely exercised.
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
