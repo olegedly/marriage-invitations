@@ -10,6 +10,7 @@ import Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import type { GenerationInput, Gender, NumberForm, Register } from './render.js';
 import type { Language } from './event.js';
+import { DEFAULT_PHOTO_SHAPE, type PhotoShape } from './cover.js';
 
 export interface HistoryEntry {
   readonly id: string;
@@ -21,6 +22,7 @@ export interface HistoryEntry {
   readonly gender: Gender;
   readonly countryCode: string;
   readonly personalNote: string | null;
+  readonly photoShape: PhotoShape;
   readonly filename: string;
   readonly markdown: string;
 }
@@ -48,6 +50,7 @@ interface Row {
   gender: string;
   country_code: string;
   personal_note: string | null;
+  photo_shape: string | null;
   filename: string;
   markdown: string;
 }
@@ -63,6 +66,10 @@ function toEntry(row: Row): HistoryEntry {
     gender: row.gender as Gender,
     countryCode: row.country_code,
     personalNote: row.personal_note,
+    // A row written before the frame shape was an option reads as the arch,
+    // which is what it was generated with. The column's DEFAULT covers the
+    // same case in SQL; this covers a row that is somehow null.
+    photoShape: (row.photo_shape as PhotoShape | null) ?? DEFAULT_PHOTO_SHAPE,
     filename: row.filename,
     markdown: row.markdown,
   };
@@ -85,6 +92,7 @@ export function generationInputOf(entry: HistoryEntry): GenerationInput {
     gender: entry.gender,
     countryCode: entry.countryCode,
     personalNote: entry.personalNote,
+    photoShape: entry.photoShape,
   };
 }
 
@@ -103,6 +111,7 @@ export function openHistory(path: string): History {
       gender        TEXT NOT NULL,
       country_code  TEXT NOT NULL,
       personal_note TEXT,
+      photo_shape   TEXT NOT NULL DEFAULT 'arched',
       filename      TEXT NOT NULL,
       markdown      TEXT NOT NULL
     );
@@ -110,13 +119,26 @@ export function openHistory(path: string): History {
       ON generations (created_at DESC);
   `);
 
+  /*
+   * A database created before the frame shape was an option has no column for
+   * it. CREATE TABLE IF NOT EXISTS will not add one to a table that already
+   * exists, so an older history would fail every insert without this. The
+   * default is what those rows were generated with.
+   */
+  const columns = db.prepare(`PRAGMA table_info(generations)`).all() as { name: string }[];
+  if (!columns.some((column) => column.name === 'photo_shape')) {
+    db.exec(
+      `ALTER TABLE generations ADD COLUMN photo_shape TEXT NOT NULL DEFAULT 'arched'`,
+    );
+  }
+
   const insert = db.prepare(`
     INSERT INTO generations
       (id, created_at, guests, language, number, register, gender,
-       country_code, personal_note, filename, markdown)
+       country_code, personal_note, photo_shape, filename, markdown)
     VALUES
       (@id, @created_at, @guests, @language, @number, @register, @gender,
-       @country_code, @personal_note, @filename, @markdown)
+       @country_code, @personal_note, @photo_shape, @filename, @markdown)
   `);
 
   const selectAll = db.prepare(
@@ -136,6 +158,7 @@ export function openHistory(path: string): History {
         gender: input.gender,
         countryCode: input.countryCode,
         personalNote: input.personalNote,
+        photoShape: input.photoShape,
         filename,
         markdown,
       };
@@ -150,6 +173,7 @@ export function openHistory(path: string): History {
         gender: entry.gender,
         country_code: entry.countryCode,
         personal_note: entry.personalNote,
+        photo_shape: entry.photoShape,
         filename: entry.filename,
         markdown: entry.markdown,
       });

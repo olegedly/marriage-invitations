@@ -9,6 +9,7 @@ import {
   type GenerationRequest,
   type Language,
   type NumberForm,
+  type PhotoShape,
   type Register,
 } from '../types.js';
 
@@ -38,6 +39,9 @@ export function Generate(props: {
   const [gender, setGender] = createSignal<Gender>(initial?.gender ?? 'neutral');
   const [countryCode, setCountryCode] = createSignal(initial?.countryCode ?? 'PH');
   const [personalNote, setPersonalNote] = createSignal(initial?.personalNote ?? '');
+  const [photoShape, setPhotoShape] = createSignal<PhotoShape>(
+    initial?.photoShape ?? 'arched',
+  );
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
   const [done, setDone] = createSignal<string | null>(null);
@@ -82,6 +86,7 @@ export function Generate(props: {
       gender: gender(),
       countryCode: countryCode(),
       personalNote: personalNote().trim() || null,
+      photoShape: photoShape(),
     };
   }
 
@@ -161,6 +166,7 @@ export function Generate(props: {
       gender: gender(),
       countryCode: countryCode(),
       personalNote: personalNote().trim() || null,
+      photoShape: photoShape(),
     };
 
     try {
@@ -316,6 +322,32 @@ export function Generate(props: {
           </Show>
         </span>
       </label>
+
+      <fieldset class="field">
+        <legend class="label">
+          Photo frame<em>the cover photograph — the text preview cannot show it</em>
+        </legend>
+        <div class="choices">
+          <label class={{ choice: true, active: photoShape() === 'arched' }}>
+            <input
+              type="radio"
+              name="photoShape"
+              checked={photoShape() === 'arched'}
+              onChange={() => setPhotoShape('arched')}
+            />
+            Arched
+          </label>
+          <label class={{ choice: true, active: photoShape() === 'rectangular' }}>
+            <input
+              type="radio"
+              name="photoShape"
+              checked={photoShape() === 'rectangular'}
+              onChange={() => setPhotoShape('rectangular')}
+            />
+            Rectangular
+          </label>
+        </div>
+      </fieldset>
 
       <div class="actions">
         <button type="submit" class="primary" disabled={!canSubmit()}>

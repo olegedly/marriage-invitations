@@ -16,6 +16,7 @@ import { buildIcs, buildGoogleCalendarUrl, icsFilename } from './calendar.js';
 import { allCountries, zoneForCountry } from './timezone.js';
 import { publicBaseUrl, type EventConstants } from './event.js';
 import { renderInvitation, type GenerationInput, type RenderOptions } from './render.js';
+import { DEFAULT_PHOTO_SHAPE, type PhotoShape } from './cover.js';
 import { generatePdf, type PdfRenderer } from './pdf.js';
 import { generationInputOf, type History } from './history.js';
 import { contentDisposition } from './download.js';
@@ -40,6 +41,7 @@ const LANGUAGES = new Set(['en', 'ru', 'ceb']);
 const NUMBERS = new Set(['singular', 'plural']);
 const REGISTERS = new Set(['formal', 'informal']);
 const GENDERS = new Set(['masculine', 'feminine', 'neutral']);
+const PHOTO_SHAPES = new Set<PhotoShape>(['arched', 'rectangular']);
 
 interface ValidationOk {
   readonly ok: true;
@@ -94,6 +96,22 @@ function validate(body: unknown): ValidationOk | ValidationErr {
     personalNote = b.personalNote;
   }
 
+  /*
+   * The frame shape may be omitted and then takes the default. It is the only
+   * choice with a sensible stand-in: every other field changes what the
+   * invitation says, and silently choosing a language or a tone on the
+   * caller's behalf would put words in the guest's mouth. A browser tab left
+   * open across a redeploy is the case this forgives, and a value that IS sent
+   * is still checked.
+   */
+  let photoShape: PhotoShape = DEFAULT_PHOTO_SHAPE;
+  if (b.photoShape !== undefined) {
+    if (typeof b.photoShape !== 'string' || !PHOTO_SHAPES.has(b.photoShape as PhotoShape)) {
+      return { ok: false, message: 'Unknown photo shape' };
+    }
+    photoShape = b.photoShape as PhotoShape;
+  }
+
   return {
     ok: true,
     value: {
@@ -104,6 +122,7 @@ function validate(body: unknown): ValidationOk | ValidationErr {
       gender: b.gender as GenerationInput['gender'],
       countryCode: b.countryCode,
       personalNote,
+      photoShape,
     },
   };
 }

@@ -18,6 +18,7 @@ function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
     gender: 'neutral',
     countryCode: 'RO',
     personalNote: null,
+    photoShape: 'arched',
     ...overrides,
   };
 }

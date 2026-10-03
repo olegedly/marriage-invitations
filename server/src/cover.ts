@@ -22,6 +22,18 @@
  */
 export const COVER_PHOTO = 'images/photo.jpg';
 
+/**
+ * The shape of the photograph's frame on the cover.
+ *
+ * A guest-facing choice like the language or the tone, so it is carried in the
+ * generation input and stored with the record — a past invitation is
+ * re-downloaded with the frame it was sent with, not with today's default.
+ */
+export type PhotoShape = 'arched' | 'rectangular';
+
+/** The frame an invitation gets when nothing is chosen: the arch. */
+export const DEFAULT_PHOTO_SHAPE: PhotoShape = 'arched';
+
 export interface CoverData {
   /** Localised "Save the date". */
   readonly label: string;
@@ -36,6 +48,8 @@ export interface CoverData {
   /** Full date in the guest's own zone, e.g. "Tuesday, 13 October 2026". */
   readonly date: string;
   readonly venue: string;
+  /** Frame shape; becomes the `cover--arched` / `cover--rectangular` class. */
+  readonly shape: PhotoShape;
 }
 
 /** Escape a value for use in HTML text or a double-quoted attribute. */
@@ -61,7 +75,7 @@ export function coverMarkup(data: CoverData): string {
   const alt = escapeHtml(`${data.groom} ${data.conjunction} ${data.bride}`);
 
   return [
-    '<section class="cover">',
+    `<section class="cover cover--${data.shape}">`,
     `<p class="cover-kicker">${escapeHtml(data.label)}</p>`,
     '<figure class="cover-photo">',
     `<img src="${COVER_PHOTO}" alt="${alt}">`,

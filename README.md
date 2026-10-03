@@ -39,11 +39,11 @@ and is not shared with the UI.
 The invitation is two A5 sheets, and `renderInvitation()` returns them as one
 markdown document holding exactly two sections:
 
-- **Page one — the save-the-date.** The couple's photograph in an arch, the
-  names set in a script face, the date and the venue. This section
-  (`<section class="cover">`) is raw HTML, because on this page the layout *is*
-  the content: markdown has no syntax for an arched photograph or stacked script
-  names. It is emitted by `server/src/cover.ts`.
+- **Page one — the save-the-date.** The couple's photograph in an arched or
+  rectangular frame, the names set in a script face, the date and the venue.
+  This section (`<section class="cover cover--arched">`) is raw HTML, because on
+  this page the layout *is* the content: markdown has no syntax for an arched
+  photograph or stacked script names. It is emitted by `server/src/cover.ts`.
 - **Page two — the invitation copy.** The greeting, the intro, the optional
   personal note, the time with its two calls to action, and the closing, all
   inside `<section class="details">` on the floral frame as its background.
@@ -51,6 +51,21 @@ markdown document holding exactly two sections:
 Both sections are part of the stored markdown, so *Original* re-downloads
 reproduce the cover as it was generated rather than rebuilding it from today's
 constants.
+
+### The photograph's frame
+
+The frame shape is the one generation choice that changes nothing about the
+wording — it is a look, not a reading. It is a choice all the same, picked per
+guest on the form and carried in the generation input like the language or the
+tone, so a record is re-downloaded with the shape it was sent with. The two
+shapes are two rules keyed on a class the cover emits, `.cover--arched` and
+`.cover--rectangular`, so neither depends on the other being absent.
+
+Because it says nothing, it is also the only field the API will supply for
+itself when a request omits it (defaulting to the arch). Every other field would
+be putting words in the guest's mouth. There is `DEFAULT_PHOTO_SHAPE` in
+`server/src/cover.ts`, and the same default is the column default in SQLite, so
+a history written before the option existed reads as the arch it was made with.
 
 The page breaks and the copy live in the markdown; only the appearance lives in
 the stylesheet. A personal note longer than the sheet can hold runs onto a plain
@@ -89,7 +104,8 @@ Every generation is saved, and each entry offers three actions:
   was first generated. It is the record of what the guest received, so it keeps
   the links and wording of that moment even after the app is redeployed.
 - **Updated** (`GET /api/history/:id/pdf/current`) rebuilds the invitation from
-  the stored guest choices — name, language, address form, country, note —
+  the stored guest choices — name, language, address form, country, note, frame
+  shape —
   using the constants in `server/src/event.ts` as they are now. A corrected
   Zoom link, a changed Facebook URL or a moved date reaches the guest on a
   re-download, and the calendar link is built from the origin serving the

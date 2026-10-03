@@ -4,6 +4,8 @@ export type Language = 'en' | 'ru' | 'ceb';
 export type NumberForm = 'singular' | 'plural';
 export type Register = 'formal' | 'informal';
 export type Gender = 'masculine' | 'feminine' | 'neutral';
+/** Shape of the photograph's frame on the cover. */
+export type PhotoShape = 'arched' | 'rectangular';
 
 export interface CountryZone {
   code: string;
@@ -25,6 +27,7 @@ export interface GenerationRequest {
   gender: Gender;
   countryCode: string;
   personalNote: string | null;
+  photoShape: PhotoShape;
 }
 
 export interface HistoryEntry {
@@ -37,6 +40,7 @@ export interface HistoryEntry {
   gender: Gender;
   countryCode: string;
   personalNote: string | null;
+  photoShape: PhotoShape;
   filename: string;
 }
 

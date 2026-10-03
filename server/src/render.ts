@@ -10,7 +10,7 @@
 import { EVENT, type EventConstants, type Language, type Person } from './event.js';
 import { labelFor, localTime, zoneForCountry } from './timezone.js';
 import { calendarUrl } from './calendar.js';
-import { coverMarkup } from './cover.js';
+import { coverMarkup, type PhotoShape } from './cover.js';
 
 export type NumberForm = 'singular' | 'plural';
 export type Register = 'formal' | 'informal';
@@ -27,6 +27,15 @@ export interface GenerationInput {
   readonly countryCode: string;
   /** Optional short hand-written paragraph for this guest. */
   readonly personalNote: string | null;
+  /**
+   * Shape of the photograph's frame on the cover.
+   *
+   * The one choice here that changes nothing about the wording — it is a look,
+   * not a reading. It rides in the input all the same, because it is chosen per
+   * guest and a re-download has to reproduce the card that was sent rather than
+   * today's default.
+   */
+  readonly photoShape: PhotoShape;
 }
 
 /** Map a language to the filename suffix. */
@@ -316,6 +325,7 @@ export function renderInvitation(
     conjunction: CONJUNCTION[language],
     date: time.date,
     venue: event.venue[language],
+    shape: input.photoShape,
   });
 
   return {

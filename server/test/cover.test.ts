@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { COVER_PHOTO, coverMarkup } from '../src/cover.js';
+import { COVER_PHOTO, coverMarkup, type CoverData } from '../src/cover.js';
 
 /**
  * The cover is the one place the renderer emits HTML, so its values are the one
@@ -8,13 +8,14 @@ import { COVER_PHOTO, coverMarkup } from '../src/cover.js';
  * mattering if one ever contains an ampersand.
  */
 
-const BASE = {
+const BASE: CoverData = {
   label: 'Save the date',
   groom: 'Oleg',
   bride: 'Rose',
   conjunction: '&',
   date: 'Tuesday, 13 October 2026',
   venue: 'Online',
+  shape: 'arched',
 };
 
 describe('coverMarkup', () => {
@@ -60,6 +61,13 @@ describe('coverMarkup', () => {
       'Tuesday, 13 October 2026',
       'Online',
     ]);
+  });
+
+  test('names the frame shape on the section, for the stylesheet', () => {
+    expect(coverMarkup(BASE)).toContain('<section class="cover cover--arched">');
+    expect(coverMarkup({ ...BASE, shape: 'rectangular' })).toContain(
+      '<section class="cover cover--rectangular">',
+    );
   });
 
   test('uses the conjunction it is given, not a fixed ampersand', () => {

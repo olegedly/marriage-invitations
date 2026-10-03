@@ -178,11 +178,6 @@ body {
   margin: 0;
 }
 
-/*
- * The arch: a semicircular top, square base. The horizontal radius is half the
- * photograph's width, which is what makes the corners meet in a true arch
- * rather than a rounded rectangle.
- */
 .cover-photo img {
   display: block;
   width: 74mm;
@@ -190,7 +185,20 @@ body {
   object-fit: cover;
   background: var(--paper-deep);
   border: 0.5mm solid var(--gold);
+}
+
+/*
+ * The photograph's frame, one rule per option so neither shape depends on the
+ * other being absent. The two class names are the contract with cover.ts.
+ */
+.cover--arched .cover-photo img {
+  /* A semicircular top: the horizontal radius is half the photograph's width,
+     which is what makes the corners meet in a true arch. */
   border-radius: 37mm 37mm 0 0;
+}
+
+.cover--rectangular .cover-photo img {
+  border-radius: 0;
 }
 
 .cover-names {

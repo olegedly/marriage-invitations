@@ -146,6 +146,46 @@ describe('POST /api/generate', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  test('rejects an unknown photo frame rather than drawing a default', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/generate',
+      payload: validBody({ photoShape: 'hexagonal' }),
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toMatch(/photo shape/i);
+  });
+
+  test('defaults an omitted frame to the arch', async () => {
+    // A tab left open across a redeploy sends the payload it was built with.
+    // The frame is the one choice that can stand in for itself: it changes the
+    // look, never the words, so a default is safe where one for a language or a
+    // tone would not be.
+    const withoutShape = validBody();
+    delete (withoutShape as Record<string, unknown>).photoShape;
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/generate',
+      payload: withoutShape,
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(history.list()[0]!.photoShape).toBe('arched');
+  });
+
+  test('stores the chosen frame with the record', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/generate',
+      payload: validBody({ photoShape: 'rectangular' }),
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(history.list()[0]!.photoShape).toBe('rectangular');
+  });
+
   test('returns 500 without leaking internals when rendering fails', async () => {    const broken = await buildApp({
       history,
       renderPdf: async () => {
