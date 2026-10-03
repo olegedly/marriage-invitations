@@ -27,6 +27,12 @@ export interface CoverData {
   readonly label: string;
   readonly groom: string;
   readonly bride: string;
+  /**
+   * The word joining the two names, per language: "&" in English and Cebuano,
+   * "и" in Russian. Passed in rather than fixed here because it is language,
+   * not decoration.
+   */
+  readonly conjunction: string;
   /** Full date in the guest's own zone, e.g. "Tuesday, 13 October 2026". */
   readonly date: string;
   readonly venue: string;
@@ -52,7 +58,7 @@ function escapeHtml(value: string): string {
 export function coverMarkup(data: CoverData): string {
   const groom = escapeHtml(data.groom);
   const bride = escapeHtml(data.bride);
-  const alt = escapeHtml(`${data.groom} and ${data.bride}`);
+  const alt = escapeHtml(`${data.groom} ${data.conjunction} ${data.bride}`);
 
   return [
     '<section class="cover">',
@@ -62,7 +68,7 @@ export function coverMarkup(data: CoverData): string {
     '</figure>',
     '<div class="cover-names">',
     `<p class="cover-name">${groom}</p>`,
-    '<p class="cover-amp">&amp;</p>',
+    `<p class="cover-and">${escapeHtml(data.conjunction)}</p>`,
     `<p class="cover-name">${bride}</p>`,
     '</div>',
     `<p class="cover-date">${escapeHtml(data.date)}</p>`,

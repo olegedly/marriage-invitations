@@ -176,6 +176,28 @@ const SAVE_THE_DATE: Record<Language, string> = {
   ceb: 'Timan-i ang petsa',
 };
 
+/**
+ * The word between the two names.
+ *
+ * Russian joins names with "и", not with an ampersand: "Олег & Роуз" reads as
+ * a typo to a Russian guest, and the ampersand is a Latin-typography habit
+ * rather than a neutral symbol. English and Cebuano keep "&", which is the
+ * convention on invitations in both.
+ */
+const CONJUNCTION: Record<Language, string> = {
+  en: '&',
+  ru: 'и',
+  ceb: '&',
+};
+
+/** The couple, joined the way the language joins two names. */
+function couple(event: EventConstants, language: Language): string {
+  return `${personName(event.groom, language)} ${CONJUNCTION[language]} ${personName(
+    event.bride,
+    language,
+  )}`;
+}
+
 const INTRO_FORMS = ['formalSingular', 'informalSingular', 'plural'] as const;
 type IntroForm = (typeof INTRO_FORMS)[number];
 
@@ -252,9 +274,7 @@ export function renderInvitation(
 
   lines.push(`# ${event.title[language]}`);
   lines.push('');
-  lines.push(
-    `${personName(event.groom, language)} & ${personName(event.bride, language)}`,
-  );
+  lines.push(couple(event, language));
   lines.push('');
   lines.push(`${greeting(input)} **${guests}**`);
   lines.push('');
@@ -282,9 +302,7 @@ export function renderInvitation(
   lines.push('');
   lines.push(CLOSING[language]);
   lines.push('');
-  lines.push(
-    `${personName(event.groom, language)} & ${personName(event.bride, language)}`,
-  );
+  lines.push(couple(event, language));
 
   // Page one is the cover; page two is the invitation itself. The details are
   // wrapped in their own section because that section is what carries the
@@ -295,6 +313,7 @@ export function renderInvitation(
     label: SAVE_THE_DATE[language],
     groom: event.groom[language],
     bride: event.bride[language],
+    conjunction: CONJUNCTION[language],
     date: time.date,
     venue: event.venue[language],
   });

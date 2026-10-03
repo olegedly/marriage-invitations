@@ -73,7 +73,7 @@ The renderer serves this directory over HTTP and points Chromium at it
 (`basedir` in `server/src/pdf.ts`), which is why the stylesheet can reference
 `images/photo.jpg` by a relative path that works both in development
 (`src/templates`) and in the container (`dist/templates`). The two script files
-are one CSS family split by `unicode-range`, so "Oleg & Rose" and "Олег & Роуз"
+are one CSS family split by `unicode-range`, so "Oleg & Rose" and "Олег и Роуз"
 both come out hand-written.
 
 The palette is sampled from the frame, so the cover and the copy always match

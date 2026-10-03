@@ -12,6 +12,7 @@ const BASE = {
   label: 'Save the date',
   groom: 'Oleg',
   bride: 'Rose',
+  conjunction: '&',
   date: 'Tuesday, 13 October 2026',
   venue: 'Online',
 };
@@ -59,6 +60,14 @@ describe('coverMarkup', () => {
       'Tuesday, 13 October 2026',
       'Online',
     ]);
+  });
+
+  test('uses the conjunction it is given, not a fixed ampersand', () => {
+    // Russian joins two names with "и"; the cover must not decide that itself.
+    const html = coverMarkup({ ...BASE, conjunction: 'и' });
+
+    expect(html).toContain('class="cover-and">и<');
+    expect(html).not.toContain('&amp;');
   });
 
   test('carries the label, the names, the date and the venue', () => {

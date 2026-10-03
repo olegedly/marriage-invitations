@@ -189,6 +189,26 @@ describe('renderInvitation — the two-page structure', () => {
     expect(markdown).toContain('class="cover-name">Олег<');
   });
 
+  test('joins the couple with the language own word, not an ampersand', () => {
+    const { markdown } = render(input({ language: 'ru' }));
+
+    // Russian writes "Олег и Роуз". An ampersand reads as a typo there, and it
+    // is not decoration, so it has to change everywhere the names are joined:
+    // the cover, the couple line under the title, and the closing.
+    expect(markdown).toContain('class="cover-and">и<');
+    expect(markdown).toContain('class="cover-name">Роуз<');
+    expect(markdown.match(/\)\s+и\s+\[Роуз\]/g)).toHaveLength(2);
+  });
+
+  test('keeps the ampersand for English and Cebuano', () => {
+    for (const language of ['en', 'ceb'] as const) {
+      const { markdown } = render(input({ language }));
+
+      expect(markdown).toContain('class="cover-and">&amp;<');
+      expect(markdown.match(/\)\s+&\s+\[Rose\]/g)).toHaveLength(2);
+    }
+  });
+
   test('keeps the greeting and the note inside the invitation copy', () => {
     const { markdown } = render(
       input({ guests: 'Loimie', personalNote: 'See you there.' }),
