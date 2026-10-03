@@ -7,7 +7,7 @@
  * everything constant comes from event.ts.
  */
 
-import { EVENT, type Language } from './event.js';
+import { EVENT, type EventConstants, type Language, type Person } from './event.js';
 import { labelFor, localTime, zoneForCountry } from './timezone.js';
 import { calendarUrl } from './calendar.js';
 
@@ -63,7 +63,7 @@ export function invitationFilename(guests: string, language: Language): string {
 }
 
 /** Render a person's name as a Facebook link when a profile is configured. */
-function personName(person: typeof EVENT.groom, language: Language): string {
+function personName(person: Person, language: Language): string {
   const name = person[language];
   return person.facebook ? `[${name}](${person.facebook})` : name;
 }
@@ -196,6 +196,13 @@ export interface RenderOptions {
    * relative and cannot be omitted.
    */
   readonly baseUrl: string;
+  /**
+   * Wedding constants to render with. Defaults to the live EVENT from event.ts,
+   * which is what every request uses; the override exists so a test can stand
+   * in for a redeploy that changed the constants, and so history can be
+   * re-rendered with today's values.
+   */
+  readonly event?: EventConstants;
 }
 
 export function renderInvitation(
@@ -206,6 +213,7 @@ export function renderInvitation(
   filename: string;
 } {
   const { language, guests, personalNote, countryCode } = input;
+  const event = options.event ?? EVENT;
 
   const country = zoneForCountry(countryCode);
   if (!country) {
@@ -214,7 +222,7 @@ export function renderInvitation(
     throw new Error(`Unknown country code: ${countryCode}`);
   }
   const zone = country.zone;
-  const time = localTime(zone, language);
+  const time = localTime(zone, language, new Date(event.instant));
   const label = labelFor(country, language);
 
   // One time only: the guest's own, labeled with the zone it is based on.
@@ -229,10 +237,10 @@ export function renderInvitation(
 
   const lines: string[] = [];
 
-  lines.push(`# ${EVENT.title[language]}`);
+  lines.push(`# ${event.title[language]}`);
   lines.push('');
   lines.push(
-    `${personName(EVENT.groom, language)} & ${personName(EVENT.bride, language)}`,
+    `${personName(event.groom, language)} & ${personName(event.bride, language)}`,
   );
   lines.push('');
   lines.push(`${greeting(input)} **${guests}**`);
@@ -253,7 +261,7 @@ export function renderInvitation(
 
   lines.push(`## ${timeLine}`);
   lines.push('');
-  lines.push(`[${JOIN_CTA[language]}](${EVENT.zoomLink})`);
+  lines.push(`[${JOIN_CTA[language]}](${event.zoomLink})`);
   lines.push('');
   lines.push(`[${CALENDAR_CTA[language]}](${calendarUrl(options.baseUrl)})`);
   lines.push('');
@@ -262,7 +270,7 @@ export function renderInvitation(
   lines.push(CLOSING[language]);
   lines.push('');
   lines.push(
-    `${personName(EVENT.groom, language)} & ${personName(EVENT.bride, language)}`,
+    `${personName(event.groom, language)} & ${personName(event.bride, language)}`,
   );
 
   return {

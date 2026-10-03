@@ -68,6 +68,26 @@ function toEntry(row: Row): HistoryEntry {
   };
 }
 
+/**
+ * Rebuild the guest-specific input a past entry was generated from.
+ *
+ * The stored markdown is only a rendering of this input under the constants and
+ * template in force at the time. Keeping the input itself is what lets the same
+ * invitation be rendered again with today's values (see GET
+ * /api/history/:id/pdf/current) while the original stays untouched.
+ */
+export function generationInputOf(entry: HistoryEntry): GenerationInput {
+  return {
+    guests: entry.guests,
+    language: entry.language,
+    number: entry.number,
+    register: entry.register,
+    gender: entry.gender,
+    countryCode: entry.countryCode,
+    personalNote: entry.personalNote,
+  };
+}
+
 export function openHistory(path: string): History {
   const db = new Database(path);
   db.pragma('journal_mode = WAL');

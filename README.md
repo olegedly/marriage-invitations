@@ -7,7 +7,9 @@ Enter a guest name, pick a language and a tone, choose the guest's country, add
 an optional personal line — and download a PDF ready to send. The invitation's
 text updates in a live preview as you fill the form, so the wording can be read
 before anything is generated. Every generation is kept in a history you can
-revisit and re-download.
+revisit and re-download. Each entry can be downloaded two ways: exactly as it
+was first generated, or re-rendered from the same guest choices with the
+wedding details in force now.
 
 Oleg & Rose — 13 October 2026, 18:10 EEST (Oleg's time, Romania), online.
 Rose is in the Philippines, which is why the ceremony is online.
@@ -31,6 +33,32 @@ PDF bytes → download, and a record saved to SQLite history
 The markdown is the record of what was said; the PDF is what it looks like. The
 stylesheet at `server/src/templates/invitation.css` is used only for generation
 and is not shared with the UI.
+
+## History and re-downloads
+
+Every generation is saved, and each entry offers three actions:
+
+- **Original** (`GET /api/history/:id/pdf`) serves the markdown exactly as it
+  was first generated. It is the record of what the guest received, so it keeps
+  the links and wording of that moment even after the app is redeployed.
+- **Updated** (`GET /api/history/:id/pdf/current`) rebuilds the invitation from
+  the stored guest choices — name, language, address form, country, note —
+  using the constants in `server/src/event.ts` as they are now. A corrected
+  Zoom link, a changed Facebook URL or a moved date reaches the guest on a
+  re-download, and the calendar link is built from the origin serving the
+  request rather than the one captured originally.
+- **Reuse** opens the generation form with that entry's choices already filled
+  in, for a near-identical guest. Generating saves a new record; the original
+  is left as it was. The prefill is consumed by the form and is not re-applied
+  on a later visit, so a blank form stays blank.
+
+That is why history stores the generation **input**, not only the rendered
+text: the input is the source of truth and the markdown is one rendering of it.
+No action rewrites the stored record, so the original stays available even
+after the updated one has been fetched.
+
+The downloads answer different questions. "What exactly did we send?" is the
+original. "What would we send today?" is the updated one.
 
 ## The text preview
 
@@ -214,7 +242,7 @@ form never implies a distinction the language does not make.
 npm test
 ```
 
-143 tests across five seams:
+160 tests across five seams:
 
 - `renderInvitation(input)` — pure markdown generation: languages, timezones,
   filenames, personal note placement

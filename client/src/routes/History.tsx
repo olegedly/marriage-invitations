@@ -1,6 +1,11 @@
 import { createMemo, createSignal, For, Show } from 'solid-js';
-import { downloadHistoryPdf, fetchHistory, fetchHistoryEntry } from '../api.js';
-import { LANGUAGE_LABELS, type HistoryDetail, type HistoryEntry } from '../types.js';
+import {
+  downloadHistoryPdf,
+  fetchHistory,
+  fetchHistoryEntry,
+  type HistoryPdfVariant,
+} from '../api.js';
+import { LANGUAGE_LABELS, type GenerationRequest, type HistoryDetail, type HistoryEntry } from '../types.js';
 
 const GENDER_LABELS: Record<string, string> = {
   masculine: 'masc.',
@@ -8,12 +13,12 @@ const GENDER_LABELS: Record<string, string> = {
   neutral: '',
 };
 
-export function History() {
+export function History(props: { onReuse: (request: GenerationRequest) => void }) {
   const [entries, setEntries] = createSignal<HistoryEntry[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
   const [expanded, setExpanded] = createSignal<HistoryDetail | null>(null);
-  const [busyId, setBusyId] = createSignal<string | null>(null);
+  const [busy, setBusy] = createSignal<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -41,17 +46,20 @@ export function History() {
     }
   }
 
-  async function download(id: string) {
-    setBusyId(id);
+  async function download(id: string, variant: HistoryPdfVariant) {
+    setBusy(`${id}:${variant}`);
     setError(null);
     try {
-      await downloadHistoryPdf(id);
+      await downloadHistoryPdf(id, variant);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download failed');
     } finally {
-      setBusyId(null);
+      setBusy(null);
     }
   }
+
+  /** One download per entry at a time, so the two buttons cannot race. */
+  const busyOn = (id: string) => busy()?.startsWith(`${id}:`) ?? false;
 
   const grouped = createMemo(() =>
     entries().map((entry) => ({
@@ -112,15 +120,34 @@ export function History() {
                   <button
                     type="button"
                     class="ghost"
-                    disabled={busyId() === entry.id}
-                    onClick={() => void download(entry.id)}
+                    title="Open a new invitation with these choices"
+                    onClick={() => props.onReuse(entry)}
                   >
-                    {busyId() === entry.id ? '…' : 'Download PDF'}
+                    Reuse
+                  </button>
+                  <button
+                    type="button"
+                    class="ghost"
+                    title="Exactly as it was first generated"
+                    disabled={busyOn(entry.id)}
+                    onClick={() => void download(entry.id, 'original')}
+                  >
+                    {busy() === `${entry.id}:original` ? '…' : 'Original'}
+                  </button>
+                  <button
+                    type="button"
+                    class="ghost"
+                    title="Re-rendered with the current wedding details"
+                    disabled={busyOn(entry.id)}
+                    onClick={() => void download(entry.id, 'current')}
+                  >
+                    {busy() === `${entry.id}:current` ? '…' : 'Updated'}
                   </button>
                 </div>
               </div>
 
               <Show when={expanded()?.id === entry.id}>
+                <p class="muted history-caption">Text as originally generated.</p>
                 <pre class="markdown-view">{expanded()!.markdown}</pre>
               </Show>
             </li>

@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, Show } from 'solid-js';
+import { createEffect, createMemo, createSignal, onSettled, Show } from 'solid-js';
 import { CountryPicker } from '../components/CountryPicker.js';
 import { Preview } from '../components/Preview.js';
 import { generateInvitation, previewInvitation } from '../api.js';
@@ -12,21 +12,45 @@ import {
   type Register,
 } from '../types.js';
 
-export function Generate(props: { countries: CountryZone[]; onGenerated: () => void }) {
-  const [guests, setGuests] = createSignal('');
+export function Generate(props: {
+  countries: CountryZone[];
+  /**
+   * Choices to start the form with, taken from a history entry. Read once, at
+   * mount: later edits are the operator's, not the record's.
+   */
+  initial?: GenerationRequest | null;
+  /** Called once the prefill has been taken, so it is not applied again. */
+  onInitialConsumed?: () => void;
+  onGenerated: () => void;
+}) {
+  // Captured at creation. A later change to props.initial must not overwrite
+  // what the operator has since typed.
+  const initial = props.initial ?? null;
+
+  const [guests, setGuests] = createSignal(initial?.guests ?? '');
   // Language and country are independent choices: country picks the timezone
   // only, never the language. The defaults are deliberately the most common
   // path (the bride's country, an English invitation) rather than an odd
   // pairing such as English copy addressed to a Romanian guest.
-  const [language, setLanguage] = createSignal<Language>('en');
-  const [number, setNumber] = createSignal<NumberForm>('singular');
-  const [register, setRegister] = createSignal<Register>('formal');
-  const [gender, setGender] = createSignal<Gender>('neutral');
-  const [countryCode, setCountryCode] = createSignal('PH');
-  const [personalNote, setPersonalNote] = createSignal('');
+  const [language, setLanguage] = createSignal<Language>(initial?.language ?? 'en');
+  const [number, setNumber] = createSignal<NumberForm>(initial?.number ?? 'singular');
+  const [register, setRegister] = createSignal<Register>(initial?.register ?? 'formal');
+  const [gender, setGender] = createSignal<Gender>(initial?.gender ?? 'neutral');
+  const [countryCode, setCountryCode] = createSignal(initial?.countryCode ?? 'PH');
+  const [personalNote, setPersonalNote] = createSignal(initial?.personalNote ?? '');
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
   const [done, setDone] = createSignal<string | null>(null);
+
+  /** Whether this form is a re-run of a past entry, for the notice below. */
+  const [reused] = createSignal(initial !== null);
+
+  // Release the prefill so navigating back to Generate starts a blank form.
+  // onSettled rather than setup: writing the parent's signal during the
+  // component body is disallowed in Solid 2, and the value has been read by now.
+  onSettled(() => {
+    if (initial !== null) props.onInitialConsumed?.();
+  });
 
   const [preview, setPreview] = createSignal<{ markdown: string; filename: string } | null>(null);
   const [previewError, setPreviewError] = createSignal<string | null>(null);
@@ -154,6 +178,13 @@ export function Generate(props: { countries: CountryZone[]; onGenerated: () => v
     <div class="generate">
       <form class="card form" onSubmit={submit}>
       <h2>New invitation</h2>
+
+      <Show when={reused()}>
+        <p class="muted prefill-note">
+          Started from a history entry. Generating saves a new record; the
+          original is left as it was.
+        </p>
+      </Show>
 
       <label class="field">
         <span class="label">

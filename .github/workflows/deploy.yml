@@ -49,7 +49,7 @@ jobs:
       - name: Typecheck the client
         run: npx tsc --noEmit -p client/tsconfig.json
 
-      # Typechecks the tests, then runs all 143 of them — including the one that
+      # Typechecks the tests, then runs all 160 of them — including the one that
       # launches Chromium and asserts real PDF bytes come out.
       - name: Test
         run: npm test

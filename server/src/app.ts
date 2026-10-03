@@ -14,10 +14,10 @@ import { fileURLToPath } from 'node:url';
 
 import { buildIcs, buildGoogleCalendarUrl, icsFilename } from './calendar.js';
 import { allCountries, zoneForCountry } from './timezone.js';
-import { publicBaseUrl } from './event.js';
-import { renderInvitation, type GenerationInput } from './render.js';
+import { publicBaseUrl, type EventConstants } from './event.js';
+import { renderInvitation, type GenerationInput, type RenderOptions } from './render.js';
 import { generatePdf, type PdfRenderer } from './pdf.js';
-import type { History } from './history.js';
+import { generationInputOf, type History } from './history.js';
 import { contentDisposition } from './download.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -28,6 +28,12 @@ export interface AppDeps {
   readonly renderPdf?: PdfRenderer;
   /** Directory holding the built SPA. */
   readonly clientDir?: string;
+  /**
+   * Wedding constants. Defaults to the live EVENT from event.ts; a test passes
+   * its own to stand in for a redeploy that changed them, which is exactly the
+   * situation the history re-render exists to handle.
+   */
+  readonly event?: EventConstants;
 }
 
 const LANGUAGES = new Set(['en', 'ru', 'ceb']);
@@ -145,6 +151,17 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
 
   /**
+   * Options every render shares: the caller's own origin, so the calendar link
+   * is absolute and correct on whichever host served the request, plus the
+   * event constants. In production `deps.event` is unset and the live EVENT is
+   * used, so this is not a settings surface — only tests replace it.
+   */
+  const renderOptions = (request: FastifyRequest): RenderOptions => ({
+    baseUrl: requestOrigin(request),
+    ...(deps.event ? { event: deps.event } : {}),
+  });
+
+  /**
    * Render the invitation's text without producing a PDF.
    *
    * This exists so the wording can be read and approved before a PDF is
@@ -162,9 +179,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     }
 
     try {
-      const rendered = renderInvitation(result.value, {
-        baseUrl: requestOrigin(request),
-      });
+      const rendered = renderInvitation(result.value, renderOptions(request));
       return reply.send(rendered);
     } catch (error) {
       return reply
@@ -181,7 +196,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
     let rendered: { markdown: string; filename: string };
     try {
-      rendered = renderInvitation(result.value, { baseUrl: requestOrigin(request) });
+      rendered = renderInvitation(result.value, renderOptions(request));
     } catch (error) {
       // Includes an unknown country, which must never silently fall back.
       return reply
@@ -224,6 +239,39 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       return reply
         .header('content-type', 'application/pdf')
         .header('content-disposition', contentDisposition(entry.filename))
+        .send(pdf);
+    },
+  );
+
+  /**
+   * Re-render a past invitation with the constants in force now.
+   *
+   * The stored markdown records what was generated, so it keeps the links and
+   * wording of that moment even after a redeploy changes them. That is what
+   * /pdf above serves. This route deliberately ignores the stored markdown and
+   * rebuilds the invitation from the stored guest choices instead, so a
+   * corrected Zoom link, Facebook URL or event date reaches the guest on a
+   * re-download. The calendar origin comes from the current request, exactly as
+   * it does for a fresh generation, rather than the origin captured originally.
+   */
+  app.get<{ Params: { id: string } }>(
+    '/api/history/:id/pdf/current',
+    async (request, reply) => {
+      const entry = deps.history.get(request.params.id);
+      if (!entry) return reply.status(404).send({ error: 'Not found' });
+
+      const rendered = renderInvitation(
+        generationInputOf(entry),
+        renderOptions(request),
+      );
+
+      const pdf = await generatePdf(rendered.markdown, {
+        ...(deps.renderPdf ? { render: deps.renderPdf } : {}),
+      });
+
+      return reply
+        .header('content-type', 'application/pdf')
+        .header('content-disposition', contentDisposition(rendered.filename))
         .send(pdf);
     },
   );

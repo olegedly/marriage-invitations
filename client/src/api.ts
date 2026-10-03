@@ -84,9 +84,27 @@ export function filenameFrom(header: string | null): string | null {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
-/** Re-download a past invitation. */
-export async function downloadHistoryPdf(id: string): Promise<void> {
-  const res = await fetch(`/api/history/${encodeURIComponent(id)}/pdf`);
+/** Which rendering of a past invitation to fetch. */
+export type HistoryPdfVariant = 'original' | 'current';
+
+/**
+ * Re-download a past invitation.
+ *
+ * `original` serves the invitation exactly as it was first generated, so the
+ * record of what was sent stays intact. `current` re-renders it from the same
+ * stored guest choices using the wedding details in force now, so a link or
+ * date corrected since then reaches the guest on a re-download.
+ */
+export async function downloadHistoryPdf(
+  id: string,
+  variant: HistoryPdfVariant = 'original',
+): Promise<void> {
+  const path =
+    variant === 'current'
+      ? `/api/history/${encodeURIComponent(id)}/pdf/current`
+      : `/api/history/${encodeURIComponent(id)}/pdf`;
+
+  const res = await fetch(path);
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
   const blob = await res.blob();

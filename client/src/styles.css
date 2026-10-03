@@ -114,6 +114,13 @@ body {
   padding: 0;
 }
 
+/* Shown when the form was started from a history entry. */
+.prefill-note {
+  margin: -8px 0 18px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
 .label {
   display: block;
   margin-bottom: 6px;
@@ -449,6 +456,11 @@ button.ghost:disabled {
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.history-caption {
+  margin: 12px 0 -6px;
+  font-size: 12px;
 }
 
 .markdown-view {

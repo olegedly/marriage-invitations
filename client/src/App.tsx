@@ -3,7 +3,7 @@ import { createRouter, defineRoutes, useNavigate, useLocation } from '@solidjs/r
 import { Generate } from './routes/Generate.js';
 import { History } from './routes/History.js';
 import { fetchCountries } from './api.js';
-import type { CountryZone } from './types.js';
+import type { CountryZone, GenerationRequest } from './types.js';
 
 /**
  * Router v2 takes a route tree up front and renders through its own provider.
@@ -46,8 +46,19 @@ function NavLink(props: { href: string; children: string; class?: string }) {
   );
 }
 
-/** Route contents, selected without relying on router component exports. */
-function Outlet(props: { countries: CountryZone[] }) {
+/**
+ * Route contents, selected without relying on router component exports.
+ *
+ * `prefill` carries the choices of a history entry into a fresh generation.
+ * It lives in App because the two routes are siblings, and it is handed back
+ * as null once the form has taken it, so returning to Generate later starts
+ * blank rather than silently resurrecting the last reused invitation.
+ */
+function Outlet(props: {
+  countries: CountryZone[];
+  prefill: GenerationRequest | null;
+  onPrefillChange: (request: GenerationRequest | null) => void;
+}) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -55,10 +66,17 @@ function Outlet(props: { countries: CountryZone[] }) {
     <Show when={location.pathname === '/history'} fallback={
       <Generate
         countries={props.countries}
+        initial={props.prefill}
+        onInitialConsumed={() => props.onPrefillChange(null)}
         onGenerated={() => navigate('/history')}
       />
     }>
-      <History />
+      <History
+        onReuse={(request) => {
+          props.onPrefillChange(request);
+          navigate('/');
+        }}
+      />
     </Show>
   );
 }
@@ -66,6 +84,7 @@ function Outlet(props: { countries: CountryZone[] }) {
 export function App() {
   const [countries, setCountries] = createSignal<CountryZone[]>([]);
   const [error, setError] = createSignal<string | null>(null);
+  const [prefill, setPrefill] = createSignal<GenerationRequest | null>(null);
 
   void fetchCountries()
     .then(setCountries)
@@ -89,7 +108,11 @@ export function App() {
             <Show when={error()}>
               <p class="error">{error()}</p>
             </Show>
-            <Outlet countries={countries()} />
+            <Outlet
+              countries={countries()}
+              prefill={prefill()}
+              onPrefillChange={setPrefill}
+            />
           </main>
 
           <footer class="foot">
