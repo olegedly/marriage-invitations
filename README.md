@@ -256,6 +256,11 @@ The `uuid` is the Coolify resource's own UUID, visible in its URL in the UI.
 Until both secrets exist the `deploy` job fails with a message naming them —
 deliberately, so that a missing secret cannot look like a successful deploy.
 
+The endpoint has to answer before it can deploy: `curl -I` the `WEBHOOK_URL` and
+a 503 means Coolify's proxy has no route for that host. Reaching the dashboard
+on Coolify's raw IP and port is not a substitute for the webhook, because an
+`http://` URL would put the API token on the wire in clear text.
+
 ### Coolify
 
 1. **New Resource → Docker Compose**, then paste `docker-compose.coolify.yml`.
