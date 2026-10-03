@@ -220,6 +220,28 @@ describe('GET /api/countries', () => {
 
     expect(countries.some((c: { code: string }) => c.code === 'PL')).toBe(true);
   });
+
+  test('serves the whole world, not just a shortlist', async () => {
+    const countries = (await app.inject({ method: 'GET', url: '/api/countries' })).json();
+    const byCode = new Map(countries.map((c: { code: string }) => [c.code, c]));
+
+    // Germany and Nigeria were both absent when only the curated table existed.
+    expect(byCode.get('DE')).toMatchObject({ name: 'Germany', offset: 'UTC+2' });
+    expect(byCode.has('NG')).toBe(true);
+    // Multi-zone rows carry an abbreviation for the picker instead.
+    expect(byCode.get('US-EASTERN')).toMatchObject({ abbr: 'ET' });
+  });
+
+  test('accepts a country that was never curated', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/preview',
+      payload: validBody({ countryCode: 'DE' }),
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().markdown).toContain('Germany time');
+  });
 });
 
 describe('GET /api/calendar.ics', () => {

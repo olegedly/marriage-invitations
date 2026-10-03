@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { COUNTRY_ZONES, localTime } from '../src/timezone.js';
+import { COUNTRY_ZONES, labelFor, localTime, zoneForCountry } from '../src/timezone.js';
 import { guestInput, render } from './support/render.js';
 import type { GenerationInput } from '../src/render.js';
 
@@ -82,9 +82,17 @@ describe('localTime', () => {
     expect(t.formatted).toContain('октября');
   });
 
-  test('attaches a curated label only for its own zone', () => {
-    expect(localTime('Europe/Moscow', 'ru', WEDDING).label).toBe('МСК');
-    expect(localTime('Europe/Berlin', 'en', WEDDING).label).toBeUndefined();
+  test('labels the zone of a country nobody curated', () => {
+    // Germany is not on the curated list, so its label is generated from the
+    // ISO row: the country's own name in the guest's language.
+    expect(labelFor(zoneForCountry('DE')!, 'en')).toBe('Germany time');
+    expect(labelFor(zoneForCountry('DE')!, 'ru')).toBe('время Германии');
+    expect(labelFor(zoneForCountry('DE')!, 'ceb')).toBe('oras sa Germany');
+  });
+
+  test('attaches each country its own label', () => {
+    expect(labelFor(zoneForCountry('RU')!, 'ru')).toBe('МСК');
+    expect(labelFor(zoneForCountry('PH')!, 'en')).toBe('Philippines time');
   });
 
   test('no label names two offsets at once', () => {
@@ -134,7 +142,7 @@ describe('language and country independence', () => {
     for (const [language, label] of Object.entries(expected)) {
       const t = localTime('Europe/Bucharest', language as 'en' | 'ru' | 'ceb', WEDDING);
 
-      expect(t.label).toBe(label);
+      expect(labelFor(zoneForCountry('RO')!, language as 'en' | 'ru' | 'ceb')).toBe(label);
       // The offset itself is language-independent: same instant, same UTC+3.
       expect(t.offset).toBe('UTC+3');
     }
@@ -143,9 +151,9 @@ describe('language and country independence', () => {
   test('a country label is never taken from a different country', () => {
     // Romania's label must not appear for a Philippine guest, in any language.
     for (const language of ['en', 'ru', 'ceb'] as const) {
-      const ph = localTime('Asia/Manila', language, WEDDING);
+      const ph = labelFor(zoneForCountry('PH')!, language);
 
-      expect(ph.label).not.toMatch(/Romania|Румыни/i);
+      expect(ph).not.toMatch(/Romania|Румыни/i);
     }
   });
 

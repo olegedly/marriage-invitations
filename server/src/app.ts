@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildIcs, buildGoogleCalendarUrl, icsFilename } from './calendar.js';
-import { COUNTRY_ZONES } from './timezone.js';
+import { allCountries, zoneForCountry } from './timezone.js';
 import { publicBaseUrl } from './event.js';
 import { renderInvitation, type GenerationInput } from './render.js';
 import { generatePdf, type PdfRenderer } from './pdf.js';
@@ -72,7 +72,7 @@ function validate(body: unknown): ValidationOk | ValidationErr {
     return { ok: false, message: 'Country is required' };
   }
 
-  const country = COUNTRY_ZONES.find((c) => c.code === b.countryCode);
+  const country = zoneForCountry(b.countryCode);
   if (!country) {
     return { ok: false, message: 'Unknown country code' };
   }
@@ -229,10 +229,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   );
 
   app.get('/api/countries', async () => {
-    const sorted = [...COUNTRY_ZONES].sort(
-      (a, b) => Number(b.shortlist ?? false) - Number(a.shortlist ?? false),
-    );
-    return sorted;
+    return allCountries();
   });
 
   app.get('/api/calendar.ics', async (_request, reply) => {

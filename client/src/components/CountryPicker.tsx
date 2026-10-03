@@ -5,8 +5,9 @@ import type { CountryZone } from '../types.js';
  * Searchable country picker.
  *
  * Shortlisted countries are pinned to the top and the list is filtered as the
- * user types, matching on country name and on the timezone label so "мск" or
- * "PHT" both work.
+ * user types, matching on country name, code, zone, the guest-facing label
+ * ("мск", "Philippines time") and the right-hand text actually on screen
+ * ("ET", "UTC+5:30") so a guest can be found by whatever the operator reads.
  */
 export function CountryPicker(props: {
   countries: CountryZone[];
@@ -26,11 +27,13 @@ export function CountryPicker(props: {
 
     return props.countries.filter((c) => {
       const labels = Object.values(c.label).join(' ').toLowerCase();
+      const shown = (c.abbr ?? c.offset).toLowerCase();
       return (
         c.name.toLowerCase().includes(q) ||
         c.code.toLowerCase().includes(q) ||
         c.zone.toLowerCase().includes(q) ||
-        labels.includes(q)
+        labels.includes(q) ||
+        shown.includes(q)
       );
     });
   });
@@ -45,7 +48,7 @@ export function CountryPicker(props: {
       >
         <Show when={selected()} fallback={<span class="muted">Choose a country…</span>}>
           <span>{selected()!.name}</span>
-          <span class="pill">{selected()!.label.en ?? selected()!.zone}</span>
+          <span class="pill">{selected()!.abbr ?? selected()!.offset}</span>
         </Show>
       </button>
 
@@ -80,7 +83,7 @@ export function CountryPicker(props: {
                       </Show>
                       {country.name}
                     </span>
-                    <span class="picker-tz">{country.label.en ?? country.zone}</span>
+                    <span class="picker-tz">{country.abbr ?? country.offset}</span>
                   </button>
                 </li>
               )}

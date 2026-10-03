@@ -89,9 +89,10 @@ describe('renderInvitation — English, one guest, formal', () => {
   test('names the guest zone assumption so the time is unambiguous', () => {
     const { markdown } = render(input({ countryCode: 'US-EASTERN' }));
 
-    // The offset must be present, and multi-zone countries state their pick.
+    // The offset must be present, and multi-zone countries state their pick
+    // with a DST-neutral abbreviation rather than a standard-time one.
     expect(markdown).toMatch(/UTC-4/);
-    expect(markdown).toContain('US Eastern time');
+    expect(markdown).toContain('ET');
   });
 
   test('never mentions either partner zone to an unrelated guest', () => {
@@ -118,9 +119,9 @@ describe('renderInvitation — English, one guest, formal', () => {
 
   test('names only the guest zone, in every language', () => {
     const cases = [
-      { language: 'en' as const, countryCode: 'PH', expect: 'PHT' },
+      { language: 'en' as const, countryCode: 'PH', expect: 'Philippines time' },
       { language: 'ru' as const, countryCode: 'RU', expect: 'МСК' },
-      { language: 'ceb' as const, countryCode: 'PH', expect: 'PHT' },
+      { language: 'ceb' as const, countryCode: 'PH', expect: 'oras sa Philippines' },
     ];
 
     for (const c of cases) {

@@ -10,6 +10,10 @@ export interface CountryZone {
   name: string;
   zone: string;
   label: Partial<Record<Language, string>>;
+  /** Multi-zone abbreviation shown in the picker, e.g. "ET". */
+  abbr?: string;
+  /** Offset at the ceremony instant, shown when there is no abbreviation. */
+  offset: string;
   shortlist?: boolean;
 }
 

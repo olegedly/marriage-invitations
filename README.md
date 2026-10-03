@@ -114,9 +114,10 @@ single source of truth: date and time, Zoom link, couple names per language, and
 their Facebook links. Changing any of these needs a redeploy; there is
 deliberately no settings UI, because none of it varies.
 
-Country → timezone mappings live in **`server/src/timezone.ts`**. Offsets are
-always computed from the IANA database at render time, never hardcoded, so a
-tzdata update is picked up on redeploy.
+Country → timezone mappings live in **`server/src/timezone.ts`**, backed by the
+full ISO 3166-1 list in **`server/src/countries.ts`**. Offsets are always
+computed from the IANA database at render time, never hardcoded, so a tzdata
+update is picked up on redeploy.
 
 The base URL for the `.ics` link inside invitations is **derived from the
 request** — the origin the browser actually reached the app on — so no
@@ -140,8 +141,19 @@ zone it is based on and the offset — for example:
 
 ```
 ## вторник, 13 октября 2026 г. в 18:10 — UTC+3, МСК
-## Tuesday, 13 October 2026 at 23:10 — UTC+8, PHT
+## Tuesday, 13 October 2026 at 23:10 — UTC+8, Philippines time
 ```
+
+Every ISO country is selectable, not just the curated shortlist: a country the
+couple never thought about is generated from `countries.ts`, resolved to its
+primary zone. Kosovo (not in ISO 3166-1) is carried as a curated entry. The
+label follows one rule: a **single-zone** country reads
+"<Country> time" in the guest's language ("Germany time", "время Германии"); a
+**multi-zone** country is split into one entry per zone and labeled with a
+well-known, DST-neutral abbreviation ("ET", "WIB", "AET"), because the numeric
+offset beside it would contradict a standard-time abbreviation on a summer date.
+The picker itself shows the offset (or that abbreviation) rather than repeating
+the country name.
 
 A guest is told which zone **their** time is in and nothing else. A guest in
 Moscow sees МСК; Romania is not named to them, and neither is the Philippines,
@@ -171,8 +183,15 @@ bumping the dependency is all that is needed when IANA publishes again.
 
 Countries spanning multiple zones (United States, Canada, Australia, Indonesia,
 Brazil, Mexico, Kazakhstan) are listed per zone with the assumption stated in
-the label, so a guest can see which one was chosen. A country that resolves to
+the label, so a guest can see which one was chosen; the plain country is not
+repeated as a second, silently-defaulted row. A country that resolves to
 nothing is rejected rather than silently falling back to the ceremony zone.
+
+For the remaining multi-zone countries (Chile, Spain, New Zealand, the
+Galápagos, and similar) only the primary zone is offered, so the list stays a
+country list rather than an exhaustive zone list. A guest in the Azores or the
+Chathams is therefore the one case this does not handle exactly; add a curated
+per-zone entry in `timezone.ts` if that ever matters.
 
 ## Languages and address forms
 
@@ -294,7 +313,8 @@ rollback: pin it in the compose file to revert a bad deploy.
 server/
   src/
     event.ts          ← single source of truth for wedding constants
-    timezone.ts       ← country → zone, offset formatting
+    countries.ts      ← the full ISO 3166-1 list and each country's primary zone
+    timezone.ts       ← curated overrides, country → zone, offset formatting
     render.ts         ← markdown generation (the core)
     calendar.ts       ← .ics + Google Calendar link
     pdf.ts            ← md-to-pdf adapter (injectable)
@@ -323,7 +343,9 @@ client/
   collide. Latin names are de-accented and joined (`Máté and Szandra` →
   `Invitation_MateAndSzandra_EN.pdf`).
 - **Russian copy is grammatically correct but should be proofread** by a native
-  speaker, especially the informal forms. Cebuano likewise.
+  speaker, especially the informal forms. Cebuano likewise. The generated
+  country labels use a hand-written genitive table (`ru` in `countries.ts`)
+  rather than an inflector, so those forms deserve a native speaker's eye too.
 - **`client/public/favicon.svg` is the only icon source.** The `.png` files
   beside it are rendered from it — the 32px one as a fallback for browsers that
   cannot use an SVG favicon, the 180px one for iOS home screens (the `.svg`'s

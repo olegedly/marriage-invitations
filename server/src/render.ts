@@ -8,7 +8,7 @@
  */
 
 import { EVENT, type Language } from './event.js';
-import { localTime, zoneForCountry } from './timezone.js';
+import { labelFor, localTime, zoneForCountry } from './timezone.js';
 import { calendarUrl } from './calendar.js';
 
 export type NumberForm = 'singular' | 'plural';
@@ -215,6 +215,7 @@ export function renderInvitation(
   }
   const zone = country.zone;
   const time = localTime(zone, language);
+  const label = labelFor(country, language);
 
   // One time only: the guest's own, labeled with the zone it is based on.
   //
@@ -223,7 +224,7 @@ export function renderInvitation(
   // Philippines, which is why the wedding is online. Naming either country to
   // an unrelated guest would raise a question they do not need answered.
   const parts = [time.offset];
-  if (time.label) parts.push(time.label);
+  if (label) parts.push(label);
   const timeLine = `${time.formatted} — ${parts.join(', ')}`;
 
   const lines: string[] = [];
