@@ -1,17 +1,35 @@
 /* The SPA is configuration only — the text preview shows the invitation's
    wording, never its layout or typography. Those live in the PDF's own
    stylesheet (server/src/templates/invitation.css), which is not shared here.
-   Styling stays plain CSS so there is exactly one stylesheet on the client. */
+   Styling stays plain CSS so there is exactly one stylesheet on the client.
+
+   The palette, though, is shared: the six named values of the invitation's
+   template are repeated here, so the console the operator works in wears the
+   same cream, gold and olive as the card the guest receives. Keep them in step
+   with `:root` in server/src/templates/invitation.css — re-sampling the frame
+   means updating both. */
 
 :root {
-  --ink: #2b2b2b;
-  --muted: #8a7f72;
-  --line: #e0d6c8;
-  --accent: #6b5b4a;
-  --accent-soft: #faf7f3;
-  --bg: #f6f3ef;
-  --error: #a33;
-  --ok: #2f6b3f;
+  /* ---- The invitation's own colours, sampled from images/frame.jpg ---- */
+  --paper: #fdf4d9; /* the sheet */
+  --paper-deep: #f6e8bf; /* its shaded corners */
+  --gold: #c2a24a; /* the frame's hairline rules */
+  --gold-deep: #8a6b1f; /* headings and script names */
+  --ink: #514724; /* body copy */
+  --muted: #756a44; /* secondary copy */
+
+  /* ---- The web's roles, each one of the values above ---- */
+  --line: #e0cb8f; /* gold, drawn at hairline weight */
+  --accent: var(--gold-deep); /* anything interactive */
+  --accent-strong: #6d5415; /* the accent, pressed */
+  --accent-soft: var(--paper-deep); /* hovers, tags, selected cards */
+  --card: #fffdf4; /* the sheet, lifted off the page */
+  --bg: var(--paper); /* the page is the sheet */
+
+  /* Status colours stay recognisable, warmed to sit on the cream. */
+  --error: #9c3b1e;
+  --error-soft: #f9e9df;
+  --ok: #4f6b1f;
 }
 
 * {
@@ -85,16 +103,17 @@ body {
 
 .topbar nav a.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--card);
 }
 
 /* ---------- Cards ---------- */
 
 .card {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 22px;
+  box-shadow: 0 1px 2px rgba(81, 71, 36, 0.05);
 }
 
 .card h2,
@@ -145,7 +164,7 @@ textarea {
   border-radius: 7px;
   font: inherit;
   color: inherit;
-  background: #fff;
+  background: var(--card);
 }
 
 input[type='text']:focus,
@@ -189,7 +208,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 7px;
   cursor: pointer;
-  background: #fff;
+  background: var(--card);
 }
 
 .choice:hover {
@@ -221,7 +240,7 @@ textarea {
   padding: 9px 11px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -246,10 +265,10 @@ textarea {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 26px rgba(81, 71, 36, 0.18);
   overflow: hidden;
 }
 
@@ -259,6 +278,7 @@ textarea {
   border-bottom: 1px solid var(--line);
   padding: 11px;
   font: inherit;
+  background: var(--card);
 }
 
 .picker-search:focus {
@@ -304,7 +324,7 @@ textarea {
 }
 
 .star {
-  color: #c9a227;
+  color: var(--gold);
 }
 
 .picker-tz {
@@ -332,14 +352,14 @@ button.primary {
   border: 0;
   border-radius: 7px;
   background: var(--accent);
-  color: #fff;
+  color: var(--card);
   font: inherit;
   font-weight: 500;
   cursor: pointer;
 }
 
 button.primary:hover:not(:disabled) {
-  background: #5a4c3e;
+  background: var(--accent-strong);
 }
 
 button.primary:disabled {
@@ -351,7 +371,7 @@ button.ghost {
   padding: 6px 12px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #fff;
+  background: var(--card);
   color: var(--accent);
   font: inherit;
   cursor: pointer;
@@ -375,7 +395,7 @@ button.ghost:disabled {
   margin-top: 14px;
   padding: 10px 12px;
   border-radius: 7px;
-  background: #fdf1f1;
+  background: var(--error-soft);
   color: var(--error);
   font-size: 13.5px;
 }
@@ -403,7 +423,7 @@ button.ghost:disabled {
 }
 
 .history-item {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 9px;
   padding: 13px 15px;

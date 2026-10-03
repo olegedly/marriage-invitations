@@ -121,6 +121,11 @@ the artwork: the cream sheet, gold rules and olive ink in `:root` at the top of
 the stylesheet are the frame's own colours. Swapping `images/frame.jpg` means
 re-sampling that block.
 
+The web console wears the same palette: `client/src/styles.css` repeats those
+six values in its own `:root` and derives its roles from them, and the favicon's
+badge and rings use the gold-deep and the paper. Re-sampling the frame means
+updating both `:root` blocks, not just the template.
+
 ## History and re-downloads
 
 Every generation is saved, and each entry offers three actions:
@@ -511,7 +516,7 @@ client/
   ```sh
   rsvg-convert -w 32 -h 32 client/public/favicon.svg -o client/public/favicon-32x32.png
   rsvg-convert -w 180 -h 180 client/public/favicon.svg -o /tmp/touch.png
-  magick /tmp/touch.png -background '#6b5b4a' -flatten client/public/apple-touch-icon.png
+  magick /tmp/touch.png -background '#8a6b1f' -flatten client/public/apple-touch-icon.png
   ```
 
   Vite copies `public/` to the build root, so the paths in `index.html` stay

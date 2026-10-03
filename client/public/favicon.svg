@@ -1,6 +1,8 @@
 <!--
-  Wedding Invitations favicon: two interlocking rings on the app's taupe badge,
-  the same accent colour as client/src/styles.css, so the tab matches the page.
+  Wedding Invitations favicon: two interlocking rings on the app's gold badge,
+  the same gold-deep as the invitation's script names and the app's accent
+  (client/src/styles.css), so the tab matches both the page and the card. The
+  rings are drawn in the invitation's cream sheet rather than white.
 
   The rings really interlock: the right ring is drawn first, the left one over
   it, then the right ring's lower half is repainted over the left one. That
@@ -21,9 +23,9 @@
     </clipPath>
   </defs>
 
-  <rect width="32" height="32" rx="8" fill="#6b5b4a" />
+  <rect width="32" height="32" rx="8" fill="#8a6b1f" />
 
-  <g fill="none" stroke="#faf7f3" stroke-width="2">
+  <g fill="none" stroke="#fdf4d9" stroke-width="2">
     <circle cx="20.6" cy="16" r="6" />
     <circle cx="11.4" cy="16" r="6" />
     <circle cx="20.6" cy="16" r="6" clip-path="url(#lower-half)" />
