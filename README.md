@@ -262,11 +262,11 @@ deliberately, so that a missing secret cannot look like a successful deploy.
 2. Set the domain to `marry.oleg.date`. Coolify's Traefik edge terminates TLS;
    the service publishes no host port.
 3. Add a persistent volume mounted at `/data`, so history survives redeploys.
-4. Give Coolify credentials for GHCR. The workflow pushes with the built-in
-   `GITHUB_TOKEN`, and GitHub packages start **private** even in a public
-   repository: either switch the package's visibility to public (Package
-   settings → Change visibility) or register a `read:packages` token under
-   Coolify → Registry.
+4. Nothing to configure for the registry: the image is published publicly, and
+   `docker manifest inspect ghcr.io/olegedly/marriage-invitations:latest`
+   succeeds with no credentials. If it is ever made private (Package settings →
+   Change visibility), register a `read:packages` token under Coolify →
+   Registry instead.
 5. Put the resource UUID in the `WEBHOOK_URL` secret, then push to `main` (or run
    the workflow by hand) to deploy.
 

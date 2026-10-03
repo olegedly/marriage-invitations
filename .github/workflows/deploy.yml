@@ -29,10 +29,22 @@ jobs:
           node-version: 24
           cache: npm
 
-      # puppeteer's install script downloads the browser the PDF test renders
-      # with (npm 12 gates install scripts; .npmrc opts these packages in).
+      # The PDF test launches a real browser and src/browser.ts finds whichever
+      # one is present. PUPPETEER_SKIP_DOWNLOAD stops npm ci from also fetching
+      # puppeteer's own ~170 MB copy, which discovery would then prefer over the
+      # Google Chrome the runner image already carries. The container renders
+      # the same way, with the distro's Chromium via PUPPETEER_EXECUTABLE_PATH.
       - name: Install dependencies
         run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "true"
+
+      # Recorded on every run so a future runner-image change is visible in the
+      # log instead of showing up as a mysterious "Could not find Chrome".
+      - name: Show which browser the PDF test will use
+        run: |
+          echo "puppeteer cache: $(ls "$HOME/.cache/puppeteer" 2>/dev/null || echo none)"
+          echo "system browser:  $(command -v google-chrome || command -v chromium || echo none)"
 
       - name: Typecheck the client
         run: npx tsc --noEmit -p client/tsconfig.json
