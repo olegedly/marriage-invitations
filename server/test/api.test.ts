@@ -157,7 +157,7 @@ describe('POST /api/generate', () => {
     expect(res.json().error).toMatch(/photo shape/i);
   });
 
-  test('defaults an omitted frame to the arch', async () => {
+  test('defaults an omitted frame to the rectangle', async () => {
     // A tab left open across a redeploy sends the payload it was built with.
     // The frame is the one choice that can stand in for itself: it changes the
     // look, never the words, so a default is safe where one for a language or a
@@ -172,18 +172,18 @@ describe('POST /api/generate', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(history.list()[0]!.photoShape).toBe('arched');
+    expect(history.list()[0]!.photoShape).toBe('rectangular');
   });
 
   test('stores the chosen frame with the record', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/generate',
-      payload: validBody({ photoShape: 'rectangular' }),
+      payload: validBody({ photoShape: 'arched' }),
     });
 
     expect(res.statusCode).toBe(200);
-    expect(history.list()[0]!.photoShape).toBe('rectangular');
+    expect(history.list()[0]!.photoShape).toBe('arched');
   });
 
   test('returns 500 without leaking internals when rendering fails', async () => {    const broken = await buildApp({

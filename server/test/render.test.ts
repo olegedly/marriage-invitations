@@ -148,7 +148,7 @@ describe('renderInvitation — the two-page structure', () => {
   test('puts the cover first and the invitation copy in its own section', () => {
     const { markdown } = render(input());
 
-    const cover = markdown.indexOf('<section class="cover cover--arched">');
+    const cover = markdown.indexOf('<section class="cover cover--rectangular">');
     const details = markdown.indexOf('<section class="details">');
 
     expect(cover).toBe(0);
@@ -167,10 +167,12 @@ describe('renderInvitation — the two-page structure', () => {
     expect(markdown).toContain('class="cover-name">Rose<');
   });
 
-  test('gives the cover the chosen frame, arched when nothing is chosen', () => {
-    expect(render(input()).markdown).toContain('<section class="cover cover--arched">');
-    expect(render(input({ photoShape: 'rectangular' })).markdown).toContain(
-      '<section class="cover cover--rectangular">',
+  test('gives the cover the frame it is given', () => {
+    // The stand-in for an omitted shape is the API's, not the renderer's:
+    // `photoShape` is required here (see api.test.ts for the defaulting).
+    expect(render(input()).markdown).toContain('<section class="cover cover--rectangular">');
+    expect(render(input({ photoShape: 'arched' })).markdown).toContain(
+      '<section class="cover cover--arched">',
     );
   });
 

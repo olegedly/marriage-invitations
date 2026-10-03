@@ -49,7 +49,7 @@ function decodeEntities(value: string): string {
  * The readable text of one line of raw HTML.
  *
  * The cover (server/src/cover.ts) is written as markup because its layout is
- * its content: an arched photograph, names, a date. The operator proofreads the
+ * its content: a framed photograph, names, a date. The operator proofreads the
  * wording, so the tags are dropped and what remains is shown; an element that
  * carries no text — the photograph, a wrapper — contributes nothing rather than
  * a line of angle brackets.

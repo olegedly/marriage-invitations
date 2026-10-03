@@ -40,7 +40,7 @@ export function Generate(props: {
   const [countryCode, setCountryCode] = createSignal(initial?.countryCode ?? 'PH');
   const [personalNote, setPersonalNote] = createSignal(initial?.personalNote ?? '');
   const [photoShape, setPhotoShape] = createSignal<PhotoShape>(
-    initial?.photoShape ?? 'arched',
+    initial?.photoShape ?? 'rectangular',
   );
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
@@ -328,15 +328,6 @@ export function Generate(props: {
           Photo frame<em>the cover photograph — the text preview cannot show it</em>
         </legend>
         <div class="choices">
-          <label class={{ choice: true, active: photoShape() === 'arched' }}>
-            <input
-              type="radio"
-              name="photoShape"
-              checked={photoShape() === 'arched'}
-              onChange={() => setPhotoShape('arched')}
-            />
-            Arched
-          </label>
           <label class={{ choice: true, active: photoShape() === 'rectangular' }}>
             <input
               type="radio"
@@ -345,6 +336,15 @@ export function Generate(props: {
               onChange={() => setPhotoShape('rectangular')}
             />
             Rectangular
+          </label>
+          <label class={{ choice: true, active: photoShape() === 'arched' }}>
+            <input
+              type="radio"
+              name="photoShape"
+              checked={photoShape() === 'arched'}
+              onChange={() => setPhotoShape('arched')}
+            />
+            Arched
           </label>
         </div>
       </fieldset>

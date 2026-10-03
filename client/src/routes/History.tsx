@@ -108,8 +108,8 @@ export function History(props: { onReuse: (request: GenerationRequest) => void }
                     </Show>
                     <span class="tag">{entry.countryCode}</span>
                     {/* Shown only when it is not the default, like gender. */}
-                    <Show when={entry.photoShape === 'rectangular'}>
-                      <span class="tag">rectangular</span>
+                    <Show when={entry.photoShape === 'arched'}>
+                      <span class="tag">arched</span>
                     </Show>
                   </span>
                   <Show when={entry.personalNote}>

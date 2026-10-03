@@ -41,9 +41,9 @@ markdown document holding exactly two sections:
 
 - **Page one — the cover.** The invitation's title over the couple's photograph
   in an arched or rectangular frame, the names set in a script face, the date and
-  the venue. This section (`<section class="cover cover--arched">`) is raw HTML,
-  because on this page the layout *is* the content: markdown has no syntax for an
-  arched photograph or stacked script names. It is emitted by
+  the venue. This section (`<section class="cover cover--rectangular">`) is raw
+  HTML, because on this page the layout *is* the content: markdown has no syntax
+  for a shaped photograph or stacked script names. It is emitted by
   `server/src/cover.ts`.
 - **Page two — the invitation copy.** The greeting, the intro, the optional
   personal note, the time with its two calls to action, and the closing, all
@@ -65,10 +65,11 @@ shapes are two rules keyed on a class the cover emits, `.cover--arched` and
 `.cover--rectangular`, so neither depends on the other being absent.
 
 Because it says nothing, it is also the only field the API will supply for
-itself when a request omits it (defaulting to the arch). Every other field would
-be putting words in the guest's mouth. There is `DEFAULT_PHOTO_SHAPE` in
-`server/src/cover.ts`, and the same default is the column default in SQLite, so
-a history written before the option existed reads as the arch it was made with.
+itself when a request omits it (defaulting to the rectangle). Every other field
+would be putting words in the guest's mouth. There is `DEFAULT_PHOTO_SHAPE` in
+`server/src/cover.ts`, and the column default for a new database follows it. A
+history written before the option existed is the exception: it reads as the arch
+it was made with, not as today's default.
 
 The page breaks and the copy live in the markdown; only the appearance lives in
 the stylesheet. Page two's copy is one flex column centred in the frame, so a

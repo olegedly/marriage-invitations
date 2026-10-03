@@ -55,6 +55,16 @@ interface Row {
   markdown: string;
 }
 
+/**
+ * The frame of a row written before the shape was a choice.
+ *
+ * Those invitations went out under the arch, so an old history file reads as
+ * arched. That is a fact about the record, not today's default, and
+ * `DEFAULT_PHOTO_SHAPE` must not be substituted for it — a re-download of a
+ * sent invitation would then quietly change its cover.
+ */
+const PRE_OPTION_PHOTO_SHAPE: PhotoShape = 'arched';
+
 function toEntry(row: Row): HistoryEntry {
   return {
     id: row.id,
@@ -67,9 +77,10 @@ function toEntry(row: Row): HistoryEntry {
     countryCode: row.country_code,
     personalNote: row.personal_note,
     // A row written before the frame shape was an option reads as the arch,
-    // which is what it was generated with. The column's DEFAULT covers the
-    // same case in SQL; this covers a row that is somehow null.
-    photoShape: (row.photo_shape as PhotoShape | null) ?? DEFAULT_PHOTO_SHAPE,
+    // which is what it was generated with (see PRE_OPTION_PHOTO_SHAPE). The
+    // migration's backfill covers those rows; this covers one that is somehow
+    // null.
+    photoShape: (row.photo_shape as PhotoShape | null) ?? PRE_OPTION_PHOTO_SHAPE,
     filename: row.filename,
     markdown: row.markdown,
   };
@@ -100,6 +111,11 @@ export function openHistory(path: string): History {
   const db = new Database(path);
   db.pragma('journal_mode = WAL');
 
+  /*
+   * The column default follows the live default (`DEFAULT_PHOTO_SHAPE`): the
+   * store always writes the shape explicitly, so it only stands in for an
+   * insert that somehow omits it — and then today's frame is what it should be.
+   */
   db.exec(`
     CREATE TABLE IF NOT EXISTS generations (
       id            TEXT PRIMARY KEY,
@@ -111,7 +127,7 @@ export function openHistory(path: string): History {
       gender        TEXT NOT NULL,
       country_code  TEXT NOT NULL,
       personal_note TEXT,
-      photo_shape   TEXT NOT NULL DEFAULT 'arched',
+      photo_shape   TEXT NOT NULL DEFAULT '${DEFAULT_PHOTO_SHAPE}',
       filename      TEXT NOT NULL,
       markdown      TEXT NOT NULL
     );
@@ -122,13 +138,14 @@ export function openHistory(path: string): History {
   /*
    * A database created before the frame shape was an option has no column for
    * it. CREATE TABLE IF NOT EXISTS will not add one to a table that already
-   * exists, so an older history would fail every insert without this. The
-   * default is what those rows were generated with.
+   * exists, so an older history would fail every insert without this. Unlike
+   * the schema above, this default IS read: SQLite backfills every existing row
+   * with it, and those rows were generated with the arch.
    */
   const columns = db.prepare(`PRAGMA table_info(generations)`).all() as { name: string }[];
   if (!columns.some((column) => column.name === 'photo_shape')) {
     db.exec(
-      `ALTER TABLE generations ADD COLUMN photo_shape TEXT NOT NULL DEFAULT 'arched'`,
+      `ALTER TABLE generations ADD COLUMN photo_shape TEXT NOT NULL DEFAULT '${PRE_OPTION_PHOTO_SHAPE}'`,
     );
   }
 

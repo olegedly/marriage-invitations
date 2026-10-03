@@ -115,12 +115,14 @@ describe('generation history', () => {
 
 describe('the photo frame on a stored invitation', () => {
   test('is kept with the record and handed back to the renderer', () => {
-    const i = input({ photoShape: 'rectangular' });
+    // The arch, deliberately not today's default: a store that quietly wrote
+    // the default instead of the input would still pass a rectangular check.
+    const i = input({ photoShape: 'arched' });
     history.save({ input: i, ...render(i) });
 
     const entry = history.list()[0]!;
-    expect(entry.photoShape).toBe('rectangular');
-    expect(generationInputOf(entry).photoShape).toBe('rectangular');
+    expect(entry.photoShape).toBe('arched');
+    expect(generationInputOf(entry).photoShape).toBe('arched');
   });
 
   test('reads as the arch for a record written before it was an option', () => {
@@ -168,7 +170,8 @@ describe('the photo frame on a stored invitation', () => {
     try {
       expect(opened.get('legacy-1')!.photoShape).toBe('arched');
 
-      // The migrated table takes new records, including a non-default frame.
+      // The migrated table takes new records, and the legacy rows keep the
+      // frame they were sent with rather than being swept to the new default.
       const i = input({ guests: 'After the upgrade', photoShape: 'rectangular' });
       opened.save({ input: i, ...render(i) });
 

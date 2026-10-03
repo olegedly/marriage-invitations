@@ -29,7 +29,7 @@ export function guestInput(overrides: Partial<GenerationInput> = {}): Generation
     gender: 'neutral',
     countryCode: 'RO',
     personalNote: null,
-    photoShape: 'arched',
+    photoShape: 'rectangular',
     ...overrides,
   };
 }

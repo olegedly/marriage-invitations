@@ -2,7 +2,7 @@
  * The cover: page one of the invitation PDF.
  *
  * This is authored as HTML rather than markdown because on this page the layout
- * IS the content: an arched photograph, the names stacked in a script face, a
+ * IS the content: a framed photograph, the names stacked in a script face, a
  * hairline rule. Markdown has no syntax for any of it, and the ways around that
  * — positional CSS keyed to paragraph order, or a script injected into the
  * renderer to rearrange the DOM — are more fragile than the markup they avoid.
@@ -31,8 +31,8 @@ export const COVER_PHOTO = 'images/photo.jpg';
  */
 export type PhotoShape = 'arched' | 'rectangular';
 
-/** The frame an invitation gets when nothing is chosen: the arch. */
-export const DEFAULT_PHOTO_SHAPE: PhotoShape = 'arched';
+/** The frame an invitation gets when nothing is chosen: the rectangle. */
+export const DEFAULT_PHOTO_SHAPE: PhotoShape = 'rectangular';
 
 export interface CoverData {
   /** Localised title, e.g. "Wedding Invitation". */
