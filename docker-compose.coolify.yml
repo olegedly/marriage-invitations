@@ -8,6 +8,16 @@
 # marry.oleg.date to the exposed port, so nothing is published to the host —
 # and X-Forwarded-Host/-Proto reach Fastify, which is what keeps the guest's
 # .ics link pointing at https://marry.oleg.date rather than a container name.
+#
+# The domain for this service must carry the container port:
+#
+#     https://marry.oleg.date:3000
+#
+# The port selects the port *inside* the container; guests still reach it on
+# 443. A domain without it routes to container port 80, where nothing is
+# listening, and the result is a 502 from a container that is perfectly
+# healthy. Coolify warns about this ("Port requirement") when the port is
+# missing — keep the required port rather than removing it.
 services:
   invitations:
     image: "ghcr.io/olegedly/marriage-invitations:latest"
