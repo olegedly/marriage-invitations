@@ -6,7 +6,7 @@
  * system Chromium in the container.
  */
 
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { discoverBrowser } from './browser.js';
@@ -18,14 +18,24 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = join(HERE, 'templates');
 const STYLESHEET = join(TEMPLATES, 'invitation.css');
 
-let cachedCss: string | null = null;
+let cached: { mtimeMs: number; css: string } | null = null;
 
-/** The single shared template stylesheet, read once. */
+/**
+ * The single shared template stylesheet.
+ *
+ * Cached, but revalidated against the file's mtime on every call. Caching it
+ * alone made a running server a trap: `tsx watch` restarts on a .ts change but
+ * not on a .css one, so an edit to the template appeared to do nothing — the
+ * generated PDFs kept the stylesheet read when the process started, and only a
+ * restart revealed the change. One stat per PDF is a cheap price for a template
+ * edit taking effect the moment it is saved.
+ */
 export async function loadStylesheet(): Promise<string> {
-  if (cachedCss === null) {
-    cachedCss = await readFile(STYLESHEET, 'utf8');
+  const { mtimeMs } = await stat(STYLESHEET);
+  if (cached === null || cached.mtimeMs !== mtimeMs) {
+    cached = { mtimeMs, css: await readFile(STYLESHEET, 'utf8') };
   }
-  return cachedCss;
+  return cached.css;
 }
 
 /**
