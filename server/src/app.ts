@@ -6,15 +6,15 @@
  */
 
 import Fastify from 'fastify';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildIcs, buildGoogleCalendarUrl, icsFilename } from './calendar.js';
+import { buildIcs, icsFilename } from './calendar.js';
 import { allCountries, zoneForCountry } from './timezone.js';
-import { publicBaseUrl, type EventConstants } from './event.js';
+import type { EventConstants } from './event.js';
 import { renderInvitation, type GenerationInput, type RenderOptions } from './render.js';
 import { DEFAULT_PHOTO_SHAPE, type PhotoShape } from './cover.js';
 import { generatePdf, type PdfRenderer } from './pdf.js';
@@ -128,34 +128,18 @@ function validate(body: unknown): ValidationOk | ValidationErr {
 }
 
 /**
- * Origin the caller reached us on, used to build absolute links inside a PDF.
+ * Options every render shares: the event constants. In production `deps.event`
+ * is unset and the live EVENT is used, so this is not a settings surface — only
+ * tests replace it.
  *
- * A PDF has no base URL, so a relative calendar link would be resolved by the
- * renderer into a dead localhost URL. Deriving the origin from the request
- * means no configuration is needed for the common case.
- *
- * Behind a reverse proxy (Coolify, nginx) the Host header can name an internal
- * address, so X-Forwarded-* wins when present. PUBLIC_BASE_URL still overrides
- * everything for deployments where neither is trustworthy.
+ * Nothing here depends on the request. The invitation used to carry an absolute
+ * link back to this app (the .ics download), which had to be built from the
+ * origin the request arrived on — Host, X-Forwarded-*, PUBLIC_BASE_URL and the
+ * tests around them. The calendar call to action now points at Google, so the
+ * rendered markdown is the same wherever the app is served from.
  */
-function requestOrigin(request: FastifyRequest): string {
-  const override = publicBaseUrl();
-  if (override) return override;
-
-  const forwardedHost = headerValue(request.headers['x-forwarded-host']);
-  const host = forwardedHost ?? headerValue(request.headers.host) ?? 'localhost:3000';
-
-  const forwardedProto = headerValue(request.headers['x-forwarded-proto']);
-  const proto = forwardedProto ?? request.protocol ?? 'http';
-  const scheme = proto === 'https' ? 'https' : 'http';
-
-  return `${scheme}://${host}`;
-}
-
-/** X-Forwarded-* headers may arrive as a list; the first entry is the client's. */
-function headerValue(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0];
-  return value;
+function renderOptions(deps: AppDeps): RenderOptions {
+  return deps.event ? { event: deps.event } : {};
 }
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
@@ -170,15 +154,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
 
   /**
-   * Options every render shares: the caller's own origin, so the calendar link
-   * is absolute and correct on whichever host served the request, plus the
-   * event constants. In production `deps.event` is unset and the live EVENT is
-   * used, so this is not a settings surface — only tests replace it.
+   * Computed once: nothing in it varies by request.
    */
-  const renderOptions = (request: FastifyRequest): RenderOptions => ({
-    baseUrl: requestOrigin(request),
-    ...(deps.event ? { event: deps.event } : {}),
-  });
+  const options = renderOptions(deps);
 
   /**
    * Render the invitation's text without producing a PDF.
@@ -198,7 +176,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     }
 
     try {
-      const rendered = renderInvitation(result.value, renderOptions(request));
+      const rendered = renderInvitation(result.value, options);
       return reply.send(rendered);
     } catch (error) {
       return reply
@@ -215,7 +193,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
     let rendered: { markdown: string; filename: string };
     try {
-      rendered = renderInvitation(result.value, renderOptions(request));
+      rendered = renderInvitation(result.value, options);
     } catch (error) {
       // Includes an unknown country, which must never silently fall back.
       return reply
@@ -279,10 +257,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       const entry = deps.history.get(request.params.id);
       if (!entry) return reply.status(404).send({ error: 'Not found' });
 
-      const rendered = renderInvitation(
-        generationInputOf(entry),
-        renderOptions(request),
-      );
+      const rendered = renderInvitation(generationInputOf(entry), options);
 
       const pdf = await generatePdf(rendered.markdown, {
         ...(deps.renderPdf ? { render: deps.renderPdf } : {}),
@@ -299,15 +274,19 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     return allCountries();
   });
 
+  /**
+   * The .ics artifact, kept for the guest who is not on Gmail.
+   *
+   * Nothing in the invitation links to it: the copy advertises the Google
+   * Calendar one-tap instead. It stays served so the couple can hand it to the
+   * occasional Yandex/Mail.ru/Outlook guest, or attach it to the covering
+   * email, without a redeploy.
+   */
   app.get('/api/calendar.ics', async (_request, reply) => {
     return reply
       .header('content-type', 'text/calendar; charset=utf-8')
       .header('content-disposition', contentDisposition(icsFilename()))
       .send(buildIcs());
-  });
-
-  app.get('/api/calendar/google', async (_request, reply) => {
-    return reply.redirect(buildGoogleCalendarUrl());
   });
 
   // Serve the built SPA when it exists, so one container serves everything.

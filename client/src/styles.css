@@ -508,8 +508,8 @@ button.ghost:disabled {
   opacity: 0.55;
 }
 
-/* Links read as their own label: the calendar URL is an absolute address built
-   from the request origin, and a raw URL would interrupt the copy. */
+/* Links read as their own label: the calendar URL carries the whole event, and
+   a raw URL would interrupt the copy. */
 .preview-link {
   color: var(--accent);
   border-bottom: 1px solid var(--line);

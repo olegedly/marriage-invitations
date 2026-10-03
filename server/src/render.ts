@@ -9,7 +9,6 @@
 
 import { EVENT, type EventConstants, type Language, type Person } from './event.js';
 import { labelFor, localTime, zoneForCountry } from './timezone.js';
-import { calendarUrl } from './calendar.js';
 import { coverMarkup, type PhotoShape } from './cover.js';
 
 export type NumberForm = 'singular' | 'plural';
@@ -128,16 +127,18 @@ const JOIN_CTA: Record<Language, string> = {
   ceb: 'Apil sa seremonya',
 };
 
+/**
+ * The calendar call to action.
+ *
+ * The label names Google rather than the generic "add to calendar", because the
+ * link opens the couple's own Google Calendar event: a label that says where the
+ * tap leads is what replaces the explainer sentence that used to sit under it.
+ * Nothing else about the calendar is said in the copy.
+ */
 const CALENDAR_CTA: Record<Language, string> = {
-  en: 'Add to calendar',
-  ru: 'Добавить в календарь',
-  ceb: 'Idugang sa kalendaryo',
-};
-
-const CALENDAR_HINT: Record<Language, string> = {
-  en: 'Downloads a calendar file that works with Google, Apple and Outlook.',
-  ru: 'Скачивает файл календаря, который работает в Google, Apple и Outlook.',
-  ceb: 'Mag-download og calendar file nga mogana sa Google, Apple ug Outlook.',
+  en: 'Add to Google Calendar',
+  ru: 'Добавить в Google Календарь',
+  ceb: 'Idugang sa Google Calendar',
 };
 
 /**
@@ -233,23 +234,25 @@ function introForm(input: GenerationInput): IntroForm {
  */
 export interface RenderOptions {
   /**
-   * Origin the invitation is being generated for, used to build the absolute
-   * calendar link. A PDF has no base URL of its own, so this cannot be
-   * relative and cannot be omitted.
-   */
-  readonly baseUrl: string;
-  /**
    * Wedding constants to render with. Defaults to the live EVENT from event.ts,
    * which is what every request uses; the override exists so a test can stand
    * in for a redeploy that changed the constants, and so history can be
    * re-rendered with today's values.
+   *
+   * There is deliberately no base URL here. The invitation holds no link back
+   * to the app it was generated on: the calendar call to action is the couple's
+   * own Google Calendar event, and the .ics endpoint is an artifact the guest is
+   * given on request rather than a link in the copy. A PDF has no base URL of
+   * its own, so anything relative would have to be absolute and derived per
+   * request, which is a whole configuration surface nobody needs to keep
+   * correct.
    */
   readonly event?: EventConstants;
 }
 
 export function renderInvitation(
   input: GenerationInput,
-  options: RenderOptions,
+  options: RenderOptions = {},
 ): {
   markdown: string;
   filename: string;
@@ -308,9 +311,7 @@ export function renderInvitation(
   lines.push('');
   lines.push(`[${JOIN_CTA[language]}](${event.zoomLink})`);
   lines.push('');
-  lines.push(`[${CALENDAR_CTA[language]}](${calendarUrl(options.baseUrl)})`);
-  lines.push('');
-  lines.push(CALENDAR_HINT[language]);
+  lines.push(`[${CALENDAR_CTA[language]}](${event.calendarLink})`);
   lines.push('');
   lines.push(CLOSING[language]);
   lines.push('');

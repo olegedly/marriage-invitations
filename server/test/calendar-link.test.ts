@@ -1,51 +1,80 @@
 import { describe, expect, test } from 'vitest';
 import { renderInvitation, type GenerationInput } from '../src/render.js';
+import { EVENT } from '../src/event.js';
 import { guestInput } from './support/render.js';
 
 /**
- * Seam T1c: the calendar link inside an invitation.
+ * Seam T1c: the calendar call to action inside an invitation.
  *
- * A PDF has no base URL. When a guest opens it on their own machine there is
- * no origin to resolve a relative link against, and Chromium's PDF export
- * fills one in from its own throwaway local server — producing a
- * plausible-looking but dead `http://localhost:<random port>/...`.
+ * The link is the couple's own Google Calendar event, held as a constant in
+ * event.ts. It used to point at an .ics endpoint of ours, which meant a file
+ * download, leaving the PDF, finding the file, and choosing an app to open it
+ * with. Between those two it briefly pointed at a generated Google Calendar
+ * template URL — a prefilled copy of the event per guest — but an event the
+ * couple own is one entry to keep correct instead of one per guest.
  *
- * So the link must be absolute, and the origin must come from the request that
- * asked for the invitation rather than from a hardcoded constant. The constant
- * defaulted to `http://localhost:3000`, which is correct on exactly one machine
- * and silently wrong everywhere else.
+ * That link was also the only reason the renderer ever needed the origin the
+ * request arrived on: a PDF has no base URL of its own, so a self-referential
+ * link had to be absolute. An external link is absolute already, so the renderer
+ * takes no origin at all (see RenderOptions in src/render.ts).
+ *
+ * The .ics itself survives at GET /api/calendar.ics for a guest who is not on
+ * Gmail and asks for a file. It is simply no longer advertised in the copy.
  */
 
 /** Philippines, so the fixture is a guest in a different zone from the couple. */
 const base = (over: Partial<GenerationInput> = {}): GenerationInput =>
   guestInput({ countryCode: 'PH', ...over });
 
-describe('calendar link in the invitation', () => {
-  test('is absolute against the origin the invitation was requested from', () => {
-    const { markdown } = renderInvitation(base(), { baseUrl: 'https://our-wedding.example' });
+describe('calendar call to action in the invitation', () => {
+  test('links to the couple’s own calendar event', () => {
+    const { markdown } = renderInvitation(base());
 
-    expect(markdown).toContain('https://our-wedding.example/api/calendar.ics');
+    expect(markdown).toContain(`[Add to Google Calendar](${EVENT.calendarLink})`);
   });
 
-  test('never contains a bare relative calendar link', () => {
-    const { markdown } = renderInvitation(base(), { baseUrl: 'https://our-wedding.example' });
+  test('the link is whatever the constants say, not a copy baked into the renderer', () => {
+    // A redeploy can repoint the event without touching the renderer, and the
+    // re-render path (/pdf/current) picks the new link up for a past guest.
+    const { markdown } = renderInvitation(base(), {
+      event: { ...EVENT, calendarLink: 'https://calendar.app.google/other-event' },
+    });
 
-    // A markdown link target of exactly "/api/calendar.ics" would be resolved
-    // by the PDF renderer into a dead localhost URL.
-    expect(markdown).not.toMatch(/\]\(\/api\/calendar\.ics\)/);
+    expect(markdown).toContain(
+      '[Add to Google Calendar](https://calendar.app.google/other-event)',
+    );
+    expect(markdown).not.toContain(EVENT.calendarLink);
   });
 
-  test('carries whatever origin it is given, including a port', () => {
-    const { markdown } = renderInvitation(base(), { baseUrl: 'http://192.168.1.50:8080' });
+  test('no longer advertises a downloadable .ics file', () => {
+    const { markdown } = renderInvitation(base());
 
-    expect(markdown).toContain('http://192.168.1.50:8080/api/calendar.ics');
+    // Neither the link nor the explainer sentence that existed to justify a
+    // file download.
+    expect(markdown).not.toContain('.ics');
+    expect(markdown).not.toContain('Downloads a calendar file');
   });
 
-  test('the zoom link is a separate absolute link and is unaffected', () => {
-    const { markdown } = renderInvitation(base(), { baseUrl: 'https://our-wedding.example' });
+  test('the join call to action is still the configured conference link', () => {
+    const { markdown } = renderInvitation(base());
 
-    expect(markdown).toContain('](https://our-wedding.example/api/calendar.ics)');
-    // The join CTA must still point at the configured conference link.
-    expect(markdown).not.toMatch(/Join the ceremony\]\(https:\/\/our-wedding/);
+    expect(markdown).toContain(`[Join the ceremony](${EVENT.zoomLink})`);
+  });
+
+  test('the label follows the invitation language', () => {
+    const ru = renderInvitation(base({ language: 'ru' })).markdown;
+    const ceb = renderInvitation(base({ language: 'ceb' })).markdown;
+
+    expect(ru).toContain('[Добавить в Google Календарь](');
+    expect(ceb).toContain('[Idugang sa Google Calendar](');
+  });
+
+  test('a Russian invitation carries no English names', () => {
+    // The generated template URL used to embed an event title, which is how
+    // Latin names got into a Russian artifact. A constant link cannot.
+    const { markdown } = renderInvitation(base({ language: 'ru' }));
+
+    expect(markdown).not.toContain('Oleg');
+    expect(markdown).not.toContain('Rose');
   });
 });

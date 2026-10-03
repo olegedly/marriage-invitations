@@ -65,8 +65,9 @@ export function Preview(props: {
 /**
  * Links render as their own label.
  *
- * The calendar link's URL is an absolute address built from the request origin;
- * showing it would put a raw URL in the middle of the copy being proofread.
+ * The calendar link's URL is a short Google Calendar address for the couple's
+ * own event; showing it would put a raw URL in the middle of the copy being
+ * proofread.
  */
 function Inline(props: { node: InlineNode }) {
   return (

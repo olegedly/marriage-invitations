@@ -93,8 +93,8 @@ reads as copy sitting low on the page. Restating the inset on
 `body > section.<class>` (`0,1,2`) outranks it. The same stylesheet's
 `body { font-size: 0.6875em }` is the other half of that trap: against our 11pt
 root it resolves to 7.56pt, so every block states the size it should read at
-rather than inheriting — the intro paragraph and the explainer under the calls to
-action share `--copy-small`, and the sign-off states the 11pt body size.
+rather than inheriting — the intro paragraph shares `--copy-small`, and the
+sign-off states the 11pt body size.
 
 ### Where the artwork and typefaces live
 
@@ -132,8 +132,8 @@ Every generation is saved, and each entry offers three actions:
   shape —
   using the constants in `server/src/event.ts` as they are now. A corrected
   Zoom link, a changed Facebook URL or a moved date reaches the guest on a
-  re-download, and the calendar link is built from the origin serving the
-  request rather than the one captured originally.
+  re-download. The calendar call to action is a constant too, so repointing
+  `calendarLink` at a different event reaches a past guest on a re-download.
 - **Reuse** opens the generation form with that entry's choices already filled
   in, for a near-identical guest. Generating saves a new record; the original
   is left as it was. The prefill is consumed by the form and is not re-applied
@@ -176,11 +176,12 @@ text, so copy is never silently hidden. The cover is the one exception on both
 counts: it is recognised, and its tags are stripped so the wording inside them —
 "Wedding Invitation", the names, the date, the venue — is proofread as text rather
 than shown as markup. Links render as their own label, because the calendar
-link's URL is an absolute address built from the request origin and a raw URL
-would interrupt the prose.
+link's URL is a short Google Calendar address, and a raw URL would interrupt the
+prose.
 
-The calendar link in a preview is built from the request origin, exactly as in a
-PDF (see below), so it is the link the guest would actually get.
+A preview carries the same calendar call to action the guest would get: the same
+renderer builds it, and it points at Google rather than at this app, so it is
+identical whichever host served the preview.
 
 ## Requirements
 
@@ -239,16 +240,36 @@ full ISO 3166-1 list in **`server/src/countries.ts`**. Offsets are always
 computed from the IANA database at render time, never hardcoded, so a tzdata
 update is picked up on redeploy.
 
-The base URL for the `.ics` link inside invitations is **derived from the
-request** — the origin the browser actually reached the app on — so no
-configuration is needed. A PDF has no base URL of its own, so the link must be
-absolute; deriving it per request keeps it correct on every host the app is
-served from, without a rebuild.
+**Nothing is configured per deployment.** The invitation holds no link back to
+the app it was generated on, so there is no base URL to get right: its two links
+are the Zoom call and the calendar call to action, and both are absolute
+addresses that exist independently of where the app runs. A PDF has no base URL
+of its own — which is exactly why an app-hosted link used to need `Host` and
+`X-Forwarded-*` handling. That whole surface went with the link.
 
-Behind a reverse proxy, `X-Forwarded-Host` and `X-Forwarded-Proto` are honored,
-so an internal service name can never leak into a guest-facing link.
+### Add to calendar
 
-`PUBLIC_BASE_URL` overrides this when neither header is trustworthy.
+The call to action opens **the couple's own Google Calendar event**, held as
+`calendarLink` in `server/src/event.ts`. It is one event the couple own and
+maintain, not a generated template of one: every guest saves the same entry, and
+the invitation carries a constant rather than a URL built at render time.
+
+It started as an `.ics` file served by this app, which meant a download, then
+leaving the PDF to find the file and choose an app to open it with — and it took
+an explainer sentence to justify. The label names Google, and the sentence is
+gone. A generated Google template URL was tried between the two and dropped: it
+put the event title inside the invitation's link, where the English names leaked
+into the Russian copy, and it left one prefilled copy per guest instead of one
+event to correct.
+
+**The ceremony time now lives in two places** — `instant`, which the copy and the
+`.ics` derive from, and the event itself, which is edited in Google Calendar. This
+repository cannot see the second one, so a test suite will never catch them
+drifting apart. If the wedding moves, change both.
+
+`GET /api/calendar.ics` still exists for the guest who is not on Gmail — the
+couple can hand it over, or attach it to the covering email. Nothing links to it,
+so the route has no language to inherit and serves English.
 
 ## Timezones
 
@@ -285,8 +306,11 @@ The ceremony's stated clock time (18:10) is local to Bucharest, which is a
 reference point for interpreting that instant — not a "home" that guests are
 being invited away from. It never appears in the copy.
 
-The `.ics` file carries the time in UTC, so the guest's calendar app localises
-it correctly on its own. That is why the invitation never shows two times.
+The `.ics` file carries the time in UTC, so a guest's calendar app localises it
+correctly on its own. The invitation never shows two times: the copy prints the
+guest's own zone and the `.ics` stores the same instant. The Google Calendar
+event is the couple's own and states its own zone, which is why its time and
+`instant` have to be kept in step by hand.
 
 ### Why a timezone library
 
@@ -334,7 +358,7 @@ form never implies a distinction the language does not make.
 npm test
 ```
 
-193 tests: the server's 185 across five seams, plus 8 in the client.
+185 tests: the server's 177 across five seams, plus 8 in the client.
 
 - `renderInvitation(input)` — pure markdown generation: languages, timezones,
   filenames, personal note placement
@@ -428,7 +452,6 @@ rollback: pin it in the compose file to revert a bad deploy.
 | `PORT` | `3000` | Listen port |
 | `HOST` | `0.0.0.0` | Listen address |
 | `DATABASE_PATH` | `data/history.sqlite` | SQLite file location |
-| `PUBLIC_BASE_URL` | `http://localhost:3000` | Base URL for the `.ics` link |
 | `PUPPETEER_EXECUTABLE_PATH` | auto-detected | Force a specific browser binary |
 
 ## Layout
@@ -441,7 +464,7 @@ server/
     timezone.ts       ← curated overrides, country → zone, offset formatting
     render.ts         ← markdown generation (the core)
     cover.ts          ← the cover page, authored as HTML
-    calendar.ts       ← .ics + Google Calendar link
+    calendar.ts       ← the .ics artifact (fallback for non-Gmail guests)
     pdf.ts            ← md-to-pdf adapter (injectable)
     history.ts        ← SQLite history
     app.ts            ← Fastify routes

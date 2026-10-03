@@ -3,9 +3,6 @@ services:
     build: .
     ports:
       - '3000:3000'
-    # PUBLIC_BASE_URL is intentionally unset: the calendar link is derived from
-    # the request. Set it only if the app is reached by a name the request does
-    # not carry (for example its container name, with no proxy in front).
     volumes:
       - invitations-data:/data
     restart: unless-stopped

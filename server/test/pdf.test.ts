@@ -80,9 +80,7 @@ describe('real PDF output', () => {
   test(
     'lays the invitation out on exactly two pages',
     async () => {
-      const { markdown } = renderInvitation(guestInput(), {
-        baseUrl: 'https://test.invalid',
-      });
+      const { markdown } = renderInvitation(guestInput());
       const pdf = await generatePdf(markdown);
 
       expect(pageCount(pdf)).toBe(2);
@@ -96,9 +94,7 @@ describe('real PDF output', () => {
       // Chromium drops an image it cannot load, so two image objects is what
       // proves the paths in the stylesheet and the cover actually resolved
       // against the served templates directory (see pdf.ts).
-      const { markdown } = renderInvitation(guestInput(), {
-        baseUrl: 'https://test.invalid',
-      });
+      const { markdown } = renderInvitation(guestInput());
       const pdf = await generatePdf(markdown);
 
       expect(imageCount(pdf)).toBe(2);

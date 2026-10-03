@@ -433,14 +433,6 @@ body > section.details {
   margin-bottom: 0;
 }
 
-/* The explainer sentence under the calendar link. */
-.details > h2 + p + p + p {
-  text-align: center;
-  font-size: var(--copy-small);
-  color: var(--ink-soft);
-  margin-bottom: 0;
-}
-
 /* ---------- Closing ---------- */
 
 /*

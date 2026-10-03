@@ -5,9 +5,9 @@
 # The deployment flow: GitHub Actions builds ghcr.io/olegedly/marriage-invitations,
 # pushes it, then POSTs the Coolify deploy webhook; Coolify pulls :latest and
 # restarts the service. Coolify's Traefik edge terminates TLS and routes
-# marry.oleg.date to the exposed port, so nothing is published to the host —
-# and X-Forwarded-Host/-Proto reach Fastify, which is what keeps the guest's
-# .ics link pointing at https://marry.oleg.date rather than a container name.
+# marry.oleg.date to the exposed port, so nothing is published to the host.
+# Nothing the invitation says depends on the host it is served from: its only
+# link is the Zoom call and the calendar call to action points at Google.
 #
 # The domain for this service must carry the container port:
 #
@@ -28,9 +28,6 @@ services:
       # History survives redeploys. DATABASE_PATH=/data/history.sqlite and the
       # HEALTHCHECK are already baked into the image.
       - "invitations_data:/data"
-    # PUBLIC_BASE_URL is deliberately unset: the calendar link is derived from
-    # the request. Set it only if the app is reached by a name the request does
-    # not carry.
 
 volumes:
   invitations_data: null

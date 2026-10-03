@@ -22,6 +22,21 @@ export interface EventConstants {
   readonly instant: string;
   /** Video conference link guests join. */
   readonly zoomLink: string;
+  /**
+   * The couple's own Google Calendar event, as a share link.
+   *
+   * A constant because it appears in the invitation: the PDF's calendar call to
+   * action points here, so every guest saves the same event the couple
+   * maintain. It is deliberately not a generated template URL — an owned event
+   * is one entry to keep correct rather than one prefilled copy per guest.
+   *
+   * The trade is that the event's own time is now a second place the ceremony
+   * time lives. `instant` above still prints the time in the copy and builds the
+   * .ics, so moving the wedding means editing both, and a mismatch is invisible
+   * to this test suite. Treat the event as the guest-facing truth and update it
+   * and `instant` together.
+   */
+  readonly calendarLink: string;
   readonly groom: Person;
   readonly bride: Person;
   /**
@@ -45,6 +60,7 @@ export interface EventConstants {
 export const EVENT: EventConstants = {
   instant: '2026-10-13T18:10:00+03:00',
   zoomLink: 'https://app.acuityscheduling.com/schedule.php?owner=17450053&action=zoom&uniqueID=bb74147df95e0312d34e6cbb3c73ede5&ownerID=17450053',
+  calendarLink: 'https://calendar.app.google/DgeTC485bonrtrJaA',
   groom: {
     en: 'Oleg',
     ru: 'Олег',
@@ -68,17 +84,3 @@ export const EVENT: EventConstants = {
     ceb: 'Online',
   },
 };
-
-/**
- * Operator override for the app's public base URL.
- *
- * Returns undefined when unset, which is the normal case: the origin is then
- * derived from the request (see requestOrigin in app.ts). There is deliberately
- * no hardcoded fallback — a constant such as `http://localhost:3000` would
- * silently win over a correct request origin and produce dead links in every
- * guest's PDF.
- */
-export function publicBaseUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  const value = env.PUBLIC_BASE_URL?.trim().replace(/\/+$/, '');
-  return value || undefined;
-}

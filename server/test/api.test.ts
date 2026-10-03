@@ -308,35 +308,6 @@ describe('GET /api/history/:id/pdf/current', () => {
     expect(rendered).toContain('Bring cake!');
     await reread.close();
   });
-
-  test('builds the calendar link from the origin serving this request', async () => {
-    await app.inject({
-      method: 'POST',
-      url: '/api/generate',
-      headers: { host: 'first.example' },
-      payload: validBody(),
-    });
-    const [entry] = (await app.inject({ method: 'GET', url: '/api/history' })).json();
-
-    const capture = capturingPdf();
-    const reread = await buildApp({ history, renderPdf: capture.render });
-
-    const res = await reread.inject({
-      method: 'GET',
-      url: `/api/history/${entry.id}/pdf/current`,
-      headers: { host: 'second.example' },
-    });
-
-    expect(res.statusCode).toBe(200);
-    const rendered = capture.markdowns.at(-1)!;
-    expect(rendered).toContain('http://second.example/api/calendar.ics');
-    expect(rendered).not.toContain('first.example');
-    // The stored record still keeps the origin it was generated on.
-    expect(history.get(entry.id)!.markdown).toContain(
-      'http://first.example/api/calendar.ics',
-    );
-    await reread.close();
-  });
 });
 
 describe('history downloads after a redeploy changes the constants', () => {
@@ -447,6 +418,8 @@ describe('GET /api/countries', () => {
 });
 
 describe('GET /api/calendar.ics', () => {
+  // Kept for a guest who is not on Gmail, and for attaching to the covering
+  // email. The invitation itself no longer links here.
   test('serves a downloadable calendar file', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/calendar.ics' });
 
@@ -466,25 +439,8 @@ describe('static client', () => {
   });
 });
 
-describe('calendar link origin', () => {
-  test('uses the Host the request arrived on, with no configuration', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/generate',
-      headers: { host: 'our-wedding.example' },
-      payload: validBody(),
-    });
-
-    expect(res.statusCode).toBe(200);
-
-    // The stored markdown is what gets rendered into the PDF, so the link is
-    // asserted there rather than in the (faked) PDF bytes.
-    const entry = history.list()[0]!;
-    const stored = history.get(entry.id)!;
-    expect(stored.markdown).toContain('http://our-wedding.example/api/calendar.ics');
-  });
-
-  test('honors X-Forwarded-* when behind a reverse proxy', async () => {
+describe('the calendar call to action', () => {
+  test('points at Google, so no request origin can leak into it', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/generate',
@@ -498,21 +454,13 @@ describe('calendar link origin', () => {
 
     expect(res.statusCode).toBe(200);
 
+    // The stored markdown is what gets rendered into the PDF, so the link is
+    // asserted there rather than in the (faked) PDF bytes.
     const stored = history.get(history.list()[0]!.id)!;
-    expect(stored.markdown).toContain('https://invites.example.org/api/calendar.ics');
-    // The internal host must not leak into a guest-facing link.
+    expect(stored.markdown).toContain(`](https://calendar.app.google/`);
+    // Neither the proxy host nor an .ics download link appears anywhere: the
+    // invitation holds no link back to the app it was generated on.
     expect(stored.markdown).not.toContain('internal-service');
-  });
-
-  test('never emits a relative calendar link', async () => {
-    await app.inject({
-      method: 'POST',
-      url: '/api/generate',
-      headers: { host: 'our-wedding.example' },
-      payload: validBody(),
-    });
-
-    const stored = history.get(history.list()[0]!.id)!;
-    expect(stored.markdown).not.toMatch(/\]\(\/api\/calendar\.ics\)/);
+    expect(stored.markdown).not.toContain('.ics');
   });
 });

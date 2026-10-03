@@ -1,15 +1,16 @@
 /**
  * Seam T3b: calendar output.
  *
- * Two shapes from one source of truth: an .ics file any calendar app can
- * import, and a Google Calendar template URL for one-click adds.
+ * Two shapes from one source of truth: a Google Calendar template URL, which
+ * the invitation links to, and an .ics file kept for the guest who is not on
+ * Gmail.
  *
  * The instants are UTC, so every client localises to the guest's own zone
  * regardless of what timezone label the invitation printed.
  */
 
 import { describe, expect, test } from 'vitest';
-import { buildIcs, buildGoogleCalendarUrl, icsFilename } from '../src/calendar.js';
+import { buildIcs, icsFilename } from '../src/calendar.js';
 import { EVENT } from '../src/event.js';
 
 /**
@@ -98,28 +99,6 @@ describe('ics generation', () => {
 
   test('is not empty when downloaded', () => {
     expect(buildIcs().length).toBeGreaterThan(100);
-  });
-});
-
-describe('google calendar link', () => {
-  test('points at the Google calendar template endpoint', () => {
-    const url = new URL(buildGoogleCalendarUrl());
-
-    expect(url.hostname).toBe('calendar.google.com');
-    expect(url.searchParams.get('action')).toBe('TEMPLATE');
-  });
-
-  test('uses the same UTC instants as the ics file', () => {
-    const url = new URL(buildGoogleCalendarUrl());
-
-    expect(url.searchParams.get('dates')).toBe('20261013T151000Z/20261013T161000Z');
-  });
-
-  test('includes the video conference link', () => {
-    const url = new URL(buildGoogleCalendarUrl());
-
-    const text = `${url.searchParams.get('text')} ${url.searchParams.get('details')} ${url.searchParams.get('location')}`;
-    expect(text).toContain(EVENT.zoomLink);
   });
 });
 

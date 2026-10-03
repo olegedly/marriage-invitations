@@ -1,11 +1,14 @@
 /**
- * Seam T3b: calendar output.
+ * Seam T3b: the .ics artifact.
  *
- * One source of truth (event.ts) produces two guest-facing artifacts:
- *   - an .ics file, which works in Google, Apple, Outlook and Thunderbird
- *   - a Google Calendar template URL, for one-click add on the web
+ * The invitation's calendar call to action does not come from here: it links to
+ * the couple's own Google Calendar event (`calendarLink` in event.ts), which is
+ * a constant. This file builds the other shape — an .ics file for a guest who is
+ * not on Gmail. The route serves it on request; nothing links to it.
  *
- * Instants are always UTC so each client localises to the guest's own zone.
+ * Instants are always UTC so each client localises to the guest's own zone. The
+ * time in the invitation copy is the guest's own local time; this is the same
+ * instant.
  */
 
 import { EVENT } from './event.js';
@@ -66,7 +69,14 @@ export function icsFilename(): string {
   return 'Oleg-Rose-Wedding.ics';
 }
 
-/** Build the .ics file contents. */
+/**
+ * Build the .ics file contents.
+ *
+ * English, because the route that serves this file has no idea who is asking:
+ * it is the artifact the couple hands to a guest who is not on Gmail, not
+ * something the renderer produces per invitation. Nothing links to it, so there
+ * is no language to inherit.
+ */
 export function buildIcs(): string {
   const { start, end } = eventWindow();
 
@@ -97,31 +107,4 @@ export function buildIcs(): string {
 
   // The spec mandates CRLF line endings.
   return lines.join('\r\n') + '\r\n';
-}
-
-/** Build a Google Calendar "add event" URL. */
-export function buildGoogleCalendarUrl(): string {
-  const { start, end } = eventWindow();
-
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: summary(),
-    dates: `${icsStamp(start)}/${icsStamp(end)}`,
-    details: description(),
-    location: EVENT.zoomLink,
-    trp: 'false',
-  });
-
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
-
-/**
- * Absolute URL of the .ics endpoint, used in the invitation markdown.
- *
- * A PDF is a detached artifact with no origin of its own, so this must be
- * absolute. The origin is passed in from the request that triggered the
- * generation; publicBaseUrl() remains the explicit operator override.
- */
-export function calendarUrl(baseUrl: string): string {
-  return `${baseUrl.replace(/\/+$/, '')}/api/calendar.ics`;
 }

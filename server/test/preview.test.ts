@@ -119,7 +119,7 @@ describe('POST /api/preview', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  test('builds the calendar link from the request origin', async () => {
+  test('carries the couple’s own calendar link', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/preview',
@@ -127,9 +127,8 @@ describe('POST /api/preview', () => {
       payload: validBody(),
     });
 
-    expect(res.json().markdown).toContain(
-      'http://our-wedding.example/api/calendar.ics',
-    );
+    // Same renderer as the PDF path, so approving this text approves the link.
+    expect(res.json().markdown).toContain('](https://calendar.app.google/');
   });
 
   test('includes the personal note when one is given', async () => {

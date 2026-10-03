@@ -3,22 +3,13 @@ import { renderInvitation, type GenerationInput } from '../../src/render.js';
 /**
  * Test rendering helper.
  *
- * `renderInvitation` requires an explicit `baseUrl` because a PDF has no base
- * URL of its own: a relative calendar link would be resolved by the renderer
- * into a dead localhost address. Production derives that origin from the HTTP
- * request (see requestOrigin in src/app.ts).
- *
- * Tests are not making HTTP requests, so they pass a fixed origin. Only the
- * link's presence matters here, never its host — tests that DO care about the
- * origin assert it explicitly via renderInvitation with their own baseUrl.
+ * Rendering takes no origin: the invitation's only self-authored link is the
+ * calendar call to action, and that points at Google (see src/render.ts). A PDF
+ * has no base URL, so a self-referential link would have to be absolute and
+ * derived from the request — the whole reason this helper used to thread one.
  */
-export const TEST_BASE_URL = 'https://test.invalid';
-
-export function render(
-  input: GenerationInput,
-  baseUrl: string = TEST_BASE_URL,
-): { markdown: string; filename: string } {
-  return renderInvitation(input, { baseUrl });
+export function render(input: GenerationInput): { markdown: string; filename: string } {
+  return renderInvitation(input);
 }
 
 /**
