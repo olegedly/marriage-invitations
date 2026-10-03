@@ -24,7 +24,13 @@ export interface EventConstants {
   readonly zoomLink: string;
   readonly groom: Person;
   readonly bride: Person;
-  /** Invitation title shown on the card. */
+  /**
+   * Title on the cover, above the photograph.
+   *
+   * It names the artifact — a wedding invitation — rather than the couple, who
+   * are already named and pictured on the same page. Page two therefore opens
+   * with the greeting instead of repeating a title and the names a second time.
+   */
   readonly title: Record<Language, string>;
   /**
    * Where the ceremony happens, shown on the cover under the date.
@@ -52,9 +58,9 @@ export const EVENT: EventConstants = {
     facebook: 'https://www.facebook.com/rosmarie.villabas.3',
   },
   title: {
-    en: 'Our Wedding',
-    ru: 'Наша свадьба',
-    ceb: 'Among Kasal',
+    en: 'Wedding Invitation',
+    ru: 'Приглашение на свадьбу',
+    ceb: 'Imbitasyon sa Kasal',
   },
   venue: {
     en: 'Online',

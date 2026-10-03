@@ -153,7 +153,9 @@ describe('renderInvitation — the two-page structure', () => {
 
     expect(cover).toBe(0);
     expect(details).toBeGreaterThan(cover);
-    expect(markdown).toContain('# Our Wedding');
+    expect(markdown).toContain('class="cover-kicker">Wedding Invitation<');
+    // Page two opens with the greeting; the cover already carries the title.
+    expect(markdown).not.toContain('\n# ');
     expect(markdown.trimEnd().endsWith('</section>')).toBe(true);
   });
 
@@ -175,7 +177,7 @@ describe('renderInvitation — the two-page structure', () => {
   test('dates the cover in the guest own zone, not the couples', () => {
     // 18:10 in Romania on 13 October is already 02:10 on the 14th in Sydney.
     // The cover must say the day the guest is living in, exactly as the time
-    // line does — a save-the-date for the wrong day is worse than none.
+    // line does — a cover date for the wrong day is worse than none.
     const { markdown } = render(input({ countryCode: 'AU' }));
 
     expect(markdown).toContain('class="cover-date">Wednesday, 14 October 2026<');
@@ -191,7 +193,7 @@ describe('renderInvitation — the two-page structure', () => {
   test('localises the cover label, venue and names', () => {
     const { markdown } = render(input({ language: 'ru' }));
 
-    expect(markdown).toContain('Запомните дату');
+    expect(markdown).toContain('Приглашение на свадьбу');
     expect(markdown).toContain('class="cover-venue">Онлайн<');
     expect(markdown).toContain('class="cover-name">Олег<');
   });
@@ -201,10 +203,10 @@ describe('renderInvitation — the two-page structure', () => {
 
     // Russian writes "Олег и Роуз". An ampersand reads as a typo there, and it
     // is not decoration, so it has to change everywhere the names are joined:
-    // the cover, the couple line under the title, and the closing.
+    // the cover, and the repeated names in the closing.
     expect(markdown).toContain('class="cover-and">и<');
     expect(markdown).toContain('class="cover-name">Роуз<');
-    expect(markdown.match(/\)\s+и\s+\[Роуз\]/g)).toHaveLength(2);
+    expect(markdown.match(/\)\s+и\s+\[Роуз\]/g)).toHaveLength(1);
   });
 
   test('keeps the ampersand for English and Cebuano', () => {
@@ -212,7 +214,7 @@ describe('renderInvitation — the two-page structure', () => {
       const { markdown } = render(input({ language }));
 
       expect(markdown).toContain('class="cover-and">&amp;<');
-      expect(markdown.match(/\)\s+&\s+\[Rose\]/g)).toHaveLength(2);
+      expect(markdown.match(/\)\s+&\s+\[Rose\]/g)).toHaveLength(1);
     }
   });
 
@@ -223,7 +225,12 @@ describe('renderInvitation — the two-page structure', () => {
 
     const details = markdown.slice(markdown.indexOf('<section class="details">'));
 
-    expect(details).toContain('Dear **Loimie**');
+    // The greeting is the first thing on the page: no title, no repeated names.
+    const firstLine = details
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)[1];
+    expect(firstLine).toBe('Dear **Loimie**');
     expect(details).toContain('> See you there.');
   });
 });

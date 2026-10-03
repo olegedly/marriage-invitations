@@ -74,17 +74,17 @@ describe('Russian address forms', () => {
       input({ language: 'ru', register: 'informal', gender: 'masculine' }),
     );
 
-    // "видеть вас" contradicts "Дорогой" — the pronoun must be singular.
-    expect(markdown).not.toContain('видеть вас');
-    expect(markdown).toContain('тебя');
+    // "с вами" contradicts "Дорогой" — the pronoun must be singular.
+    expect(markdown).not.toContain('с вами');
+    expect(markdown).toContain('с тобой');
   });
 
   test('formal singular addresses with вы', () => {
     const { markdown } = render(
       input({ language: 'ru', register: 'formal', gender: 'masculine' }),
     );
-    expect(markdown).toContain('вас');
-    expect(markdown).not.toContain('тебя');
+    expect(markdown).toContain('с вами');
+    expect(markdown).not.toContain('с тобой');
   });
 
   test('informal singular uses ты-forms in the CTAs', () => {

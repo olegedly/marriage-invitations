@@ -1,5 +1,5 @@
 /**
- * The save-the-date cover: page one of the invitation PDF.
+ * The cover: page one of the invitation PDF.
  *
  * This is authored as HTML rather than markdown because on this page the layout
  * IS the content: an arched photograph, the names stacked in a script face, a
@@ -35,7 +35,7 @@ export type PhotoShape = 'arched' | 'rectangular';
 export const DEFAULT_PHOTO_SHAPE: PhotoShape = 'arched';
 
 export interface CoverData {
-  /** Localised "Save the date". */
+  /** Localised title, e.g. "Wedding Invitation". */
   readonly label: string;
   readonly groom: string;
   readonly bride: string;

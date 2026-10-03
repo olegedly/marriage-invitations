@@ -2,7 +2,7 @@
  * The invitation template. Server-side only; used for PDF generation.
  *
  * Two A5 pages, one section each (the sections are emitted by render.ts):
- *   .cover    page one — the save-the-date: photograph, script names, date
+ *   .cover    page one — the cover: title, photograph, script names, date
  *   .details  page two — the invitation itself: greeting, intro, optional note,
  *             the time with its two calls to action, and the closing
  *
@@ -41,6 +41,13 @@
 
   /* A narrow measure keeps the copy clear of the frame's floral corners. */
   --measure: 86mm;
+
+  /*
+   * The smaller copy size, shared so the intro paragraph and the explainer under
+   * the calls to action are the same size by construction, rather than by two
+   * values that happen to agree.
+   */
+  --copy-small: 9pt;
 }
 
 @page {
@@ -125,13 +132,32 @@ body {
   min-height: calc(var(--page-h) - 1mm);
 }
 
+/*
+ * Page insets.
+ *
+ * These cannot live on `.cover` / `.details` alone: md-to-pdf bundles a default
+ * stylesheet whose `body > :first-child` and `body > :last-child` rules zero the
+ * top padding of the first section and the bottom padding of the last one —
+ * which are exactly these two. Both pages centre a flex column, and a missing
+ * 16mm inset moves that column by 8mm, so the inset is restated on a selector
+ * specific enough to outrank the reset (`body > section.x` beats
+ * `body > :first-child`). The horizontal values differ: the copy is narrower
+ * than the cover, to keep clear of the frame's floral corners.
+ */
+body > section.cover {
+  padding: 16mm;
+}
+
+body > section.details {
+  padding: 16mm 14mm;
+}
+
 /* ---------------------------------------------------------------------------
- * Page one: the save-the-date cover
+ * Page one: the cover
  * ------------------------------------------------------------------------- */
 
 .cover {
   position: relative;
-  padding: 16mm;
   background: var(--paper);
   color: var(--gold-deep);
   text-align: center;
@@ -249,7 +275,26 @@ body {
  * ------------------------------------------------------------------------- */
 
 .details {
-  padding: 16mm 14mm;
+  /*
+   * The copy is one centred column: the free space above and below is shared, so
+   * a short invitation sits in the middle of the frame instead of clinging to
+   * the top. The section has a floor rather than a fixed height, so a column
+   * taller than the page grows the section and runs on — the centring spends
+   * free space only when there is some, and a long note is never clipped. The
+   * page inset comes from `body > section.details` above, which has to outrank
+   * md-to-pdf's own stylesheet for the centring box to be symmetric.
+   */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /*
+   * The rhythm between blocks is this one gap. A flex column does not collapse
+   * sibling margins, so spacing expressed as per-block bottom margins would
+   * stack with the next block's top margin — and the intro's share would still
+   * be spent on a personal note that may not be there at all. One gap means an
+   * absent note leaves no trace.
+   */
+  gap: 4mm;
   /*
    * The frame is page two's background, anchored to the top of the section and
    * exactly one page tall. It is opaque artwork with its own paper colour, so it
@@ -261,66 +306,49 @@ body {
     no-repeat;
 }
 
-/* ---------- Title and couple ---------- */
-
-.details > h1 {
-  font-size: 15pt;
-  font-weight: 400;
-  letter-spacing: 0.18em;
-  text-indent: 0.18em;
-  text-transform: uppercase;
-  text-align: center;
-  margin: 0 0 6mm;
-  color: var(--gold-deep);
-}
-
-/* The couple line sits directly under the title. */
-.details > h1 + p {
-  text-align: center;
-  font-family: 'Invitation Script', cursive;
-  font-size: 26pt;
-  line-height: 1.1;
-  /*
-   * The names span the sheet rather than the body measure. Without this they
-   * would inherit that measure from the rule below, and its left-flush box
-   * would centre them 17mm left of the page — while the title above them
-   * stayed put.
-   */
-  max-width: none;
-  margin: 0 0 8mm;
-  color: var(--gold-deep);
-}
-
-.details > h1 + p a {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 0.2mm solid var(--gold);
-}
-
 /* ---------- Greeting and body ---------- */
 
-/* The guest's name is emphasised by the template, not by CSS. */
-.details > h1 + p + p {
-  font-size: 12pt;
-  margin: 0 auto 5mm;
+/*
+ * The greeting opens the page where the title used to stand. The cover already
+ * carries the title and the names, so page two starts with the guest: centred,
+ * and set larger than the body copy.
+ *
+ * It keeps the body measure rather than spanning the sheet: a long guest name
+ * would otherwise run into the frame's floral corners. The guest's name itself
+ * is emphasised by the template, not by CSS.
+ */
+.details > p:first-child {
+  text-align: center;
+  font-size: 15pt;
+  line-height: 1.35;
+  margin: 0 auto;
+}
+
+/* The intro paragraph, directly under the greeting: it carries the practical
+   detail about the ceremony, so it is set at the shared small copy size and keeps
+   less leading than the rest to stay compact at that length. */
+.details > p:first-child + p {
+  font-size: var(--copy-small);
+  line-height: 1.45;
 }
 
 .details > p {
   max-width: var(--measure);
-  margin: 0 auto 5mm;
+  margin: 0 auto;
   text-align: left;
 }
 
 /* ---------- Personal note ---------- */
 
 /*
- * The optional hand-written paragraph. It is set apart typographically so it
- * reads as a personal aside rather than competing with the formal copy, and it
- * is kept together so a short note never splits across pages.
+ * The optional hand-written paragraph. It is set apart typographically — its
+ * own background and rule — and carries no vertical margin of its own, so it is
+ * separated from its neighbours by the column's gap like every other block.
+ * It is kept together so a short note never splits across pages.
  */
 .details blockquote {
   max-width: var(--measure);
-  margin: 6mm auto;
+  margin: 0 auto;
   padding: 4mm 5mm;
   border-left: 0.6mm solid var(--gold);
   background: var(--paper-deep);
@@ -349,7 +377,9 @@ body {
   letter-spacing: 0.04em;
   text-align: center;
   max-width: var(--measure);
-  margin: 8mm auto 6mm;
+  /* The gap plus this margin sets the rule off from the copy above it; the
+     heading's own padding separates the rule from the date below. */
+  margin: 4mm auto 0;
   padding-top: 6mm;
   border-top: 0.2mm solid var(--gold);
   color: var(--gold-deep);
@@ -368,29 +398,37 @@ body {
 .details > h2 + p + p {
   text-align: center;
   font-size: 11.5pt;
-  margin-bottom: 3mm;
+  margin-bottom: 0;
 }
 
 /* The explainer sentence under the calendar link. */
 .details > h2 + p + p + p {
   text-align: center;
-  font-size: 9pt;
+  font-size: var(--copy-small);
   color: var(--ink-soft);
-  margin-bottom: 7mm;
+  margin-bottom: 0;
 }
 
 /* ---------- Closing ---------- */
 
-/* The final two paragraphs: the sign-off and the repeated names. */
+/*
+ * The final two paragraphs: the sign-off and the repeated names.
+ *
+ * The sign-off states 11pt rather than inheriting: md-to-pdf's bundled
+ * `body { font-size: 0.6875em }` resolves to 7.56pt against our 11pt root, so no
+ * block on the page relies on the inherited size. The sign-off reads at the
+ * invitation's full body size.
+ */
 .details > p:nth-last-child(2),
 .details > p:nth-last-child(1) {
   text-align: center;
   max-width: none;
-  margin-bottom: 2mm;
+  margin-bottom: 0;
 }
 
 .details > p:nth-last-child(2) {
-  margin-top: 5mm;
+  font-size: 11pt;
+  margin-top: 3mm;
 }
 
 /* The repeated names are set in the same script as the cover. */
@@ -410,7 +448,6 @@ body {
  * Page-break hygiene
  * ------------------------------------------------------------------------- */
 
-h1,
 h2,
 blockquote {
   break-inside: avoid;

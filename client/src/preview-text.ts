@@ -20,7 +20,6 @@ export type InlineNode =
   | { kind: 'link'; value: string; href: string };
 
 export type BlockNode =
-  | { kind: 'title'; inline: InlineNode[] }
   | { kind: 'heading'; inline: InlineNode[] }
   | { kind: 'paragraph'; inline: InlineNode[] }
   | { kind: 'quote'; inline: InlineNode[] };
@@ -100,9 +99,7 @@ export function parseMarkdown(markdown: string): BlockNode[] {
 
     if (line.trim() === '') continue;
 
-    if (line.startsWith('# ')) {
-      blocks.push({ kind: 'title', inline: parseInline(line.slice(2)) });
-    } else if (line.startsWith('## ')) {
+    if (line.startsWith('## ')) {
       blocks.push({ kind: 'heading', inline: parseInline(line.slice(3)) });
     } else if (line.startsWith('>')) {
       // The "> " prefix is stripped; a bare ">" contributes nothing, which is

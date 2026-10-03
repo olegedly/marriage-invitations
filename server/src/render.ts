@@ -141,48 +141,47 @@ const CALENDAR_HINT: Record<Language, string> = {
 };
 
 /**
- * Intro line, written per language and address form.
+ * Intro paragraph, written per language and address form.
  *
- * Russian inflects the pronoun and the verb ending, so it cannot be assembled
- * from a shared stem: "видеть вас" (formal/plural) and "видеть тебя"
- * (informal singular) are different sentences.
+ * Russian and Cebuano inflect for the person addressed, so they cannot be
+ * assembled from a shared stem: "разделить с вами" (formal/plural) against
+ * "разделить с тобой" (informal singular), and the polite "makauban kamo"
+ * against the enclitic "makauban ka". English marks no such distinction, so its
+ * three forms are the same sentence.
  */
 const INTRO: Record<Language, Record<'formalSingular' | 'informalSingular' | 'plural', string>> = {
   en: {
-    formalSingular: 'We would be honored to have you with us as we say our vows.',
-    informalSingular: 'We would love to have you with us as we say our vows.',
-    plural: 'We would love to have you with us as we say our vows.',
+    formalSingular:
+      'We would be delighted to have you with us on this special occasion. The online wedding ceremony is a video call in Zoom and takes only 30 minutes. Please join us in finding out whether online marriages are real! We sure hope they are :D',
+    informalSingular:
+      'We would be delighted to have you with us on this special occasion. The online wedding ceremony is a video call in Zoom and takes only 30 minutes. Please join us in finding out whether online marriages are real! We sure hope they are :D',
+    plural:
+      'We would be delighted to have you with us on this special occasion. The online wedding ceremony is a video call in Zoom and takes only 30 minutes. Please join us in finding out whether online marriages are real! We sure hope they are :D',
   },
   ru: {
-    formalSingular: 'Мы будем счастливы видеть вас рядом, когда мы произнесём наши клятвы.',
-    informalSingular: 'Мы будем счастливы видеть тебя рядом, когда мы произнесём наши клятвы.',
-    plural: 'Мы будем счастливы видеть вас рядом, когда мы произнесём наши клятвы.',
+    formalSingular:
+      'Мы будем счастливы разделить с вами этот особенный день. Онлайн-церемония — это видеозвонок в Zoom, и она занимает всего 30 минут. Присоединяйтесь к нам, чтобы узнать: онлайн-браки — это скам или нет. Мы очень надеемся, что нет :D',
+    informalSingular:
+      'Мы будем счастливы разделить с тобой этот особенный день. Онлайн-церемония — это видеозвонок в Zoom, и она занимает всего 30 минут. Присоединяйся к нам, чтобы узнать: онлайн-браки — это скам или нет. Мы очень надеемся, что нет :D',
+    plural:
+      'Мы будем счастливы разделить с вами этот особенный день. Онлайн-церемония — это видеозвонок в Zoom, и она занимает всего 30 минут. Присоединяйтесь к нам, чтобы узнать: онлайн-браки — это скам или нет. Мы очень надеемся, что нет :D',
   },
   ceb: {
     // Cebuano has no gender. To one person, formal address uses the polite
     // plural ("kamo"); informal address uses the enclitic "ka" on the verb.
-    formalSingular: 'Malipayon kami nga makauban kamo namo sa among pagpanumpa.',
-    informalSingular: 'Malipayon kami nga makauban ka namo sa among pagpanumpa.',
-    plural: 'Malipayon kami nga makauban kamo namo sa among pagpanumpa.',
+    formalSingular:
+      'Malipayon kami nga makauban kamo namo niining espesyal nga okasyon. Ang online nga kasal kay usa ka video call sa Zoom ug mga 30 minutos ra. Apil uban namo aron mahibaloan kung tinuod ba ang mga kasal online! Hinaot nga tinuod gyud :D',
+    informalSingular:
+      'Malipayon kami nga makauban ka namo niining espesyal nga okasyon. Ang online nga kasal kay usa ka video call sa Zoom ug mga 30 minutos ra. Apil uban namo aron mahibaloan kung tinuod ba ang mga kasal online! Hinaot nga tinuod gyud :D',
+    plural:
+      'Malipayon kami nga makauban kamo namo niining espesyal nga okasyon. Ang online nga kasal kay usa ka video call sa Zoom ug mga 30 minutos ra. Apil uban namo aron mahibaloan kung tinuod ba ang mga kasal online! Hinaot nga tinuod gyud :D',
   },
-};
-
-const NOTE_LEAD: Record<Language, string> = {
-  en: 'A note for you',
-  ru: 'Несколько слов для вас',
-  ceb: 'Usa ka mensahe alang kanimo',
 };
 
 const CLOSING: Record<Language, string> = {
   en: 'With love,',
   ru: 'С любовью,',
   ceb: 'Uban sa gugma,',
-};
-
-const SAVE_THE_DATE: Record<Language, string> = {
-  en: 'Save the date',
-  ru: 'Запомните дату',
-  ceb: 'Timan-i ang petsa',
 };
 
 /**
@@ -221,8 +220,7 @@ function introForm(input: GenerationInput): IntroForm {
  * Structure (fixed, so the single CSS template can be tuned against it):
  *   <section class="cover">      <- page one, raw HTML (see cover.ts)
  *   <section class="details">    <- page two, the invitation copy
- *     # title / couple
- *     greeting + guest name
+ *     greeting + guest name      <- opens the page; the cover holds the title
  *     intro
  *     [personal note block]      <- optional, never breaks the reading flow
  *     ## date and time
@@ -281,18 +279,17 @@ export function renderInvitation(
 
   const lines: string[] = [];
 
-  lines.push(`# ${event.title[language]}`);
-  lines.push('');
-  lines.push(couple(event, language));
-  lines.push('');
+  // Page two is the letter itself. The cover has already said whose wedding it
+  // is and shown the names, so the copy opens with the guest rather than
+  // repeating a title and the couple above it.
   lines.push(`${greeting(input)} **${guests}**`);
   lines.push('');
   lines.push(INTRO[language][introForm(input)]);
   lines.push('');
 
   if (personalNote && personalNote.trim()) {
-    lines.push(`> ${NOTE_LEAD[language]}`);
-    lines.push('>');
+    // The note is a blockquote and nothing else: no lead-in such as "A note for
+    // you", because a quoted aside set apart from the copy already reads as one.
     for (const paragraph of personalNote.trim().split(/\n{2,}/)) {
       lines.push(`> ${paragraph.trim()}`);
       lines.push('>');
@@ -319,7 +316,8 @@ export function renderInvitation(
   // instead of being positioned against a document that happens to be two
   // sheets tall (see templates/invitation.css).
   const cover = coverMarkup({
-    label: SAVE_THE_DATE[language],
+    // The cover carries the title, and page two no longer repeats it.
+    label: event.title[language],
     groom: event.groom[language],
     bride: event.bride[language],
     conjunction: CONJUNCTION[language],

@@ -508,17 +508,6 @@ button.ghost:disabled {
   opacity: 0.55;
 }
 
-.preview-couple {
-  margin: 0 0 14px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.preview-couple a {
-  color: inherit;
-}
-
 /* Links read as their own label: the calendar URL is an absolute address built
    from the request origin, and a raw URL would interrupt the copy. */
 .preview-link {

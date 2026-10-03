@@ -87,7 +87,7 @@ describe('POST /api/preview', () => {
 
     const { markdown } = res.json();
     expect(markdown).toContain('Уважаемая');
-    expect(markdown).toContain('Наша свадьба');
+    expect(markdown).toContain('Приглашение на свадьбу');
   });
 
   test('does not save anything to history', async () => {

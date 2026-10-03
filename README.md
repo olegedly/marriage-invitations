@@ -39,14 +39,17 @@ and is not shared with the UI.
 The invitation is two A5 sheets, and `renderInvitation()` returns them as one
 markdown document holding exactly two sections:
 
-- **Page one — the save-the-date.** The couple's photograph in an arched or
-  rectangular frame, the names set in a script face, the date and the venue.
-  This section (`<section class="cover cover--arched">`) is raw HTML, because on
-  this page the layout *is* the content: markdown has no syntax for an arched
-  photograph or stacked script names. It is emitted by `server/src/cover.ts`.
+- **Page one — the cover.** The invitation's title over the couple's photograph
+  in an arched or rectangular frame, the names set in a script face, the date and
+  the venue. This section (`<section class="cover cover--arched">`) is raw HTML,
+  because on this page the layout *is* the content: markdown has no syntax for an
+  arched photograph or stacked script names. It is emitted by
+  `server/src/cover.ts`.
 - **Page two — the invitation copy.** The greeting, the intro, the optional
   personal note, the time with its two calls to action, and the closing, all
-  inside `<section class="details">` on the floral frame as its background.
+  inside `<section class="details">` on the floral frame as its background. It
+  opens straight on the greeting: the cover already carries the title and the
+  names, so neither is repeated here.
 
 Both sections are part of the stored markdown, so *Original* re-downloads
 reproduce the cover as it was generated rather than rebuilding it from today's
@@ -68,9 +71,30 @@ be putting words in the guest's mouth. There is `DEFAULT_PHOTO_SHAPE` in
 a history written before the option existed reads as the arch it was made with.
 
 The page breaks and the copy live in the markdown; only the appearance lives in
-the stylesheet. A personal note longer than the sheet can hold runs onto a plain
-third sheet rather than being clipped — the frame is anchored to the top of page
-two at exactly one page tall, so it never stretches or distorts.
+the stylesheet. Page two's copy is one flex column centred in the frame, so a
+short invitation sits in the middle of the sheet rather than clinging to the top;
+the section has a floor rather than a fixed height, so the centring spends free
+space only when there is some. Its blocks are spaced by one uniform flex gap
+rather than by per-block margins — margins do not collapse in a flex column, so a
+bottom margin would stack with the next block's top margin, and a block that is
+not rendered at all would still leave its gap behind. A personal note longer than
+the sheet can hold runs onto a plain third sheet rather than being clipped — the
+frame is anchored to the top of page two at exactly one page tall, so it never
+stretches or distorts.
+
+Both pages are centred flex columns, so their page inset is declared as
+`body > section.cover` / `body > section.details` rather than on the classes
+alone. That is not a style preference. md-to-pdf bundles a default stylesheet
+whose `body > :first-child` and `body > :last-child` rules zero the top padding of
+the first section and the bottom padding of the last one — exactly these two
+sheets — and at `0,1,1` that reset outranks a plain `.cover` / `.details`
+declaration at `0,1,0`. A missing 16mm inset moves a centred column by 8mm, which
+reads as copy sitting low on the page. Restating the inset on
+`body > section.<class>` (`0,1,2`) outranks it. The same stylesheet's
+`body { font-size: 0.6875em }` is the other half of that trap: against our 11pt
+root it resolves to 7.56pt, so every block states the size it should read at
+rather than inheriting — the intro paragraph and the explainer under the calls to
+action share `--copy-small`, and the sign-off states the 11pt body size.
 
 ### Where the artwork and typefaces live
 
@@ -150,7 +174,7 @@ It is not a general markdown parser: it handles exactly the constructs the
 renderer emits, and anything it does not recognise passes through as literal
 text, so copy is never silently hidden. The cover is the one exception on both
 counts: it is recognised, and its tags are stripped so the wording inside them —
-"Save the date", the names, the date, the venue — is proofread as text rather
+"Wedding Invitation", the names, the date, the venue — is proofread as text rather
 than shown as markup. Links render as their own label, because the calendar
 link's URL is an absolute address built from the request origin and a raw URL
 would interrupt the prose.
@@ -413,7 +437,7 @@ server/
     countries.ts      ← the full ISO 3166-1 list and each country's primary zone
     timezone.ts       ← curated overrides, country → zone, offset formatting
     render.ts         ← markdown generation (the core)
-    cover.ts          ← the save-the-date page, authored as HTML
+    cover.ts          ← the cover page, authored as HTML
     calendar.ts       ← .ics + Google Calendar link
     pdf.ts            ← md-to-pdf adapter (injectable)
     history.ts        ← SQLite history

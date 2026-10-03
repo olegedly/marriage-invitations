@@ -9,7 +9,7 @@ import { COVER_PHOTO, coverMarkup, type CoverData } from '../src/cover.js';
  */
 
 const BASE: CoverData = {
-  label: 'Save the date',
+  label: 'Wedding Invitation',
   groom: 'Oleg',
   bride: 'Rose',
   conjunction: '&',
@@ -54,7 +54,7 @@ describe('coverMarkup', () => {
       .filter(Boolean);
 
     expect(text).toEqual([
-      'Save the date',
+      'Wedding Invitation',
       'Oleg',
       '&',
       'Rose',
@@ -81,7 +81,7 @@ describe('coverMarkup', () => {
   test('carries the label, the names, the date and the venue', () => {
     const html = coverMarkup(BASE);
 
-    expect(html).toContain('>Save the date<');
+    expect(html).toContain('>Wedding Invitation<');
     expect(html).toContain('>Oleg<');
     expect(html).toContain('>Rose<');
     expect(html).toContain('>Tuesday, 13 October 2026<');

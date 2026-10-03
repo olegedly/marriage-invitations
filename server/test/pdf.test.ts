@@ -11,7 +11,7 @@ import { generatePdf, type PdfRenderer } from '../src/pdf.js';
 import { renderInvitation } from '../src/render.js';
 import { guestInput } from './support/render.js';
 
-const MARKDOWN = '# Our Wedding\n\nHello.';
+const MARKDOWN = 'Wedding Invitation\n\nHello.';
 
 describe('pdf generation adapter', () => {
   test('returns PDF bytes for the given markdown', async () => {
@@ -68,7 +68,7 @@ describe('real PDF output', () => {
   test(
     'produces a real PDF containing the guest name',
     async () => {
-      const md = '# Our Wedding\n\nDear **Loimie**\n\nПриглашение Олег';
+      const md = 'Wedding Invitation\n\nDear **Loimie**\n\nПриглашение Олег';
       const pdf = await generatePdf(md);
 
       expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');

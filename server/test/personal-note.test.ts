@@ -13,23 +13,21 @@ describe('personal note', () => {
   test('is omitted entirely when absent', () => {
     const { markdown } = render(input({ personalNote: null }));
 
-    expect(markdown).not.toContain('A note for you');
-    // No stray empty blockquote left behind.
-    expect(markdown).not.toMatch(/^>\s*$/m);
+    // No stray empty blockquote left behind: without a note there is no quote.
+    expect(markdown).not.toMatch(/^>/m);
   });
 
   test('is omitted when blank rather than null', () => {
     const { markdown } = render(input({ personalNote: '   \n  ' }));
 
-    expect(markdown).not.toContain('A note for you');
-    expect(markdown).not.toMatch(/^>\s*$/m);
+    expect(markdown).not.toMatch(/^>/m);
   });
 
   test('appears as a distinct block between the intro and the details', () => {
     const note = 'So glad you can make it!';
     const { markdown } = render(input({ personalNote: note }));
 
-    const introAt = markdown.indexOf('as we say our vows');
+    const introAt = markdown.indexOf('this special occasion');
     const noteAt = markdown.indexOf(note);
     const detailsAt = markdown.indexOf('##');
 
@@ -57,16 +55,18 @@ describe('personal note', () => {
     expect(markdown).toContain(note);
   });
 
-  test('is translated into the guest language', () => {
-    const ru = render(
-      input({ language: 'ru', personalNote: 'Ждём вас!' }),
-    ).markdown;
-    const ceb = render(
-      input({ language: 'ceb', personalNote: 'Magkita ta!' }),
-    ).markdown;
+  test('carries no lead-in of its own, in any language', () => {
+    for (const language of ['en', 'ru', 'ceb'] as const) {
+      const { markdown } = render(
+        input({ language, personalNote: 'Magkita ta!' }),
+      );
 
-    expect(ru).toContain('Несколько слов для вас');
-    expect(ceb).toContain('Usa ka mensahe alang kanimo');
+      // The quote IS the note. A lead-in such as "A note for you" would state
+      // what the aside already makes plain, so the first quoted line is the
+      // note itself in every language.
+      const firstQuote = markdown.split('\n').find((line) => line.startsWith('>'));
+      expect(firstQuote).toBe('> Magkita ta!');
+    }
   });
 
   test('does not alter the filename', () => {
