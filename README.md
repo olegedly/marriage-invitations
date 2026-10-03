@@ -304,6 +304,9 @@ server/
       invitation.css  ← the one shared template stylesheet
   test/
 client/
+  index.html          ← also declares the favicon links
+  public/
+    favicon.svg       ← the icon; the PNGs beside it are rendered from it
   src/
     App.tsx, api.ts, types.ts
     preview-text.ts   ← markdown → readable text for the preview
@@ -321,3 +324,18 @@ client/
   `Invitation_MateAndSzandra_EN.pdf`).
 - **Russian copy is grammatically correct but should be proofread** by a native
   speaker, especially the informal forms. Cebuano likewise.
+- **`client/public/favicon.svg` is the only icon source.** The `.png` files
+  beside it are rendered from it — the 32px one as a fallback for browsers that
+  cannot use an SVG favicon, the 180px one for iOS home screens (the `.svg`'s
+  transparent corners are flattened onto the badge colour first, because iOS
+  renders them black otherwise). After editing the SVG, re-render rather than
+  redraw:
+
+  ```sh
+  rsvg-convert -w 32 -h 32 client/public/favicon.svg -o client/public/favicon-32x32.png
+  rsvg-convert -w 180 -h 180 client/public/favicon.svg -o /tmp/touch.png
+  magick /tmp/touch.png -background '#6b5b4a' -flatten client/public/apple-touch-icon.png
+  ```
+
+  Vite copies `public/` to the build root, so the paths in `index.html` stay
+  root-relative and the same files are served by Fastify in production.

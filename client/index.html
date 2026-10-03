@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- The SVG is the icon; the PNG is the fallback for browsers that cannot
+         use an SVG favicon. Both live in client/public/ and are copied to the
+         build root by Vite, so they are served from / by the server too. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Wedding Invitations</title>
   </head>
   <body>
