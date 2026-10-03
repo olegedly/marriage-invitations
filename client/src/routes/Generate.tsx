@@ -307,7 +307,7 @@ export function Generate(props: {
 
       <label class="field">
         <span class="label">
-          Personal note<em>optional — a short line just for them</em>
+          Personal note<em>optional — a line or a paragraph, just for them</em>
         </span>
         <textarea
           rows={3}
@@ -318,7 +318,7 @@ export function Generate(props: {
         <span class={{ counter: true, over: noteTooLong() }}>
           {noteLength()} / {NOTE_LIMIT}
           <Show when={noteLength() > 0 && noteLength() <= 120}>
-            <em> — one or two sentences reads best</em>
+            <em> — a sentence or a short paragraph reads best</em>
           </Show>
         </span>
       </label>
