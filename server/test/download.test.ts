@@ -35,6 +35,20 @@ describe('content-disposition', () => {
     expect(fallback).toMatch(/^[\x20-\x7e]+$/);
   });
 
+  test('transliterates Cyrillic so the fallback still names the guest', () => {
+    const header = contentDisposition('Invitation_СемьяИвановых_RU.pdf');
+    const fallback = /filename="([^"]+)"/.exec(header)?.[1];
+
+    expect(fallback).toBe('Invitation_SemyaIvanovykh_RU.pdf');
+  });
+
+  test('transliterates lowercase Cyrillic and drops the soft sign', () => {
+    const header = contentDisposition('Invitation_ИванМарья_RU.pdf');
+    const fallback = /filename="([^"]+)"/.exec(header)?.[1];
+
+    expect(fallback).toBe('Invitation_IvanMarya_RU.pdf');
+  });
+
   test('does not leave a bare quote or backslash in the ASCII fallback', () => {
     const header = contentDisposition('Invitation_An"na\\Bob_EN.pdf');
     const fallback = /filename="([^"]+)"/.exec(header)?.[1];

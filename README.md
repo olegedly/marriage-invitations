@@ -334,7 +334,7 @@ form never implies a distinction the language does not make.
 npm test
 ```
 
-160 tests across five seams:
+192 tests: the server's 184 across five seams, plus 8 in the client.
 
 - `renderInvitation(input)` — pure markdown generation: languages, timezones,
   filenames, personal note placement
@@ -343,6 +343,9 @@ npm test
   so a preview that reached for a browser would fail the test
 - PDF adapter — Puppeteer is injected, so only one test launches a browser
 - History — real SQLite file per test, never mocked
+- Client `filenameFrom` — the `Content-Disposition` contract with the server,
+  parsed from a header the server really builds, so a Cyrillic guest name cannot
+  silently fall back to an ASCII stand-in on its way to the downloads folder
 
 The one test that launches Chromium is the proof that real PDF bytes come out.
 
@@ -465,7 +468,11 @@ client/
   remembered.
 - **Filename slugs keep non-Latin characters** so distinct Cyrillic guests never
   collide. Latin names are de-accented and joined (`Máté and Szandra` →
-  `Invitation_MateAndSzandra_EN.pdf`).
+  `Invitation_MateAndSzandra_EN.pdf`). The header carries the name twice: the
+  client reads `filename*` first, so a browser saves
+  `Invitation_СемьяИвановых_RU.pdf`; the plain ASCII `filename` fallback
+  transliterates (`Invitation_SemyaIvanovykh_RU.pdf`) for anything that cannot
+  read `filename*`.
 - **Russian copy is grammatically correct but should be proofread** by a native
   speaker, especially the informal forms. Cebuano likewise. The generated
   country labels use a hand-written genitive table (`ru` in `countries.ts`)

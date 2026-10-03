@@ -14,7 +14,7 @@
     "build": "npm run build --workspace @marriage-invitations/client && npm run build --workspace @marriage-invitations/server",
     "dev": "npm run dev --workspace @marriage-invitations/server",
     "dev:client": "npm run dev --workspace @marriage-invitations/client",
-    "test": "npm test --workspace @marriage-invitations/server",
+    "test": "npm test --workspace @marriage-invitations/server && npm test --workspace @marriage-invitations/client",
     "start": "npm start --workspace @marriage-invitations/server"
   }
 }

@@ -77,11 +77,35 @@ export async function generateInvitation(input: GenerationRequest): Promise<void
   URL.revokeObjectURL(url);
 }
 
-/** Extract a filename from a Content-Disposition header. */
+/**
+ * Extract a filename from a Content-Disposition header.
+ *
+ * RFC 6266 gives the header two filename parameters: an ASCII `filename` that
+ * cannot carry Cyrillic, and a percent-encoded UTF-8 `filename*`. `filename*`
+ * wins when both are present — reading the plain one first would save every
+ * Russian guest as `Invitation__RU.pdf`, since their name has no ASCII form.
+ */
 export function filenameFrom(header: string | null): string | null {
   if (!header) return null;
-  const match = /filename\*?=(?:UTF-8''|")?([^";]+)"?/i.exec(header);
-  return match?.[1] ? decodeURIComponent(match[1]) : null;
+
+  // filename*=UTF-8''<percent-encoded>, with the charset and optional language
+  // in single quotes ahead of the value (RFC 6266 §4.1).
+  const extended = /filename\*\s*=\s*([\w-]+)'([\w-]*)'([^;]*)/i.exec(header);
+  if (extended?.[3]) return decodeExtended(extended[3]);
+
+  const plain = /filename\s*=\s*"([^"]*)"|filename\s*=\s*([^;]+)/i.exec(header);
+  const value = (plain?.[1] ?? plain?.[2])?.trim();
+  return value ? value : null;
+}
+
+/** Percent-decode a filename* value, keeping the raw text if it is malformed. */
+function decodeExtended(value: string): string {
+  const unquoted = value.trim().replace(/^"|"$/g, '');
+  try {
+    return decodeURIComponent(unquoted);
+  } catch {
+    return unquoted;
+  }
 }
 
 /** Which rendering of a past invitation to fetch. */
