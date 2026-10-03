@@ -334,7 +334,7 @@ form never implies a distinction the language does not make.
 npm test
 ```
 
-192 tests: the server's 184 across five seams, plus 8 in the client.
+193 tests: the server's 185 across five seams, plus 8 in the client.
 
 - `renderInvitation(input)` — pure markdown generation: languages, timezones,
   filenames, personal note placement

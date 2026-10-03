@@ -5,7 +5,7 @@ import { guestInput as input, render } from './support/render.js';
  * Seam T1, third slice: the optional personal note.
  *
  * The note must never break the surrounding reading flow, so these assert
- * structural guarantees (it is one block, it sits between intro and details,
+ * structural guarantees (it is plain copy, it sits between intro and details,
  * it is omitted cleanly when absent) rather than wording.
  */
 
@@ -13,7 +13,7 @@ describe('personal note', () => {
   test('is omitted entirely when absent', () => {
     const { markdown } = render(input({ personalNote: null }));
 
-    // No stray empty blockquote left behind: without a note there is no quote.
+    // No stray empty block left behind: without a note there is no quote.
     expect(markdown).not.toMatch(/^>/m);
   });
 
@@ -36,16 +36,24 @@ describe('personal note', () => {
     expect(detailsAt).toBeGreaterThan(noteAt);
   });
 
-  test('keeps the note in one unbroken blockquote so it reads as an aside', () => {
+  test('is ordinary copy, so it reads as the paragraph after the intro', () => {
+    const { markdown } = render(input({ personalNote: 'First thought.' }));
+
+    // No blockquote, and no marker of any kind: the note is a paragraph of the
+    // letter, so it shares the form of the intro above it.
+    expect(markdown).not.toMatch(/^>/m);
+    expect(markdown).toContain('\nFirst thought.\n');
+  });
+
+  test('keeps a blank line in the note as its own paragraph', () => {
     const { markdown } = render(
       input({ personalNote: 'First thought.\n\nSecond thought.' }),
     );
 
-    const noteLines = markdown.split('\n').filter((l) => l.startsWith('>'));
-    expect(noteLines.length).toBeGreaterThanOrEqual(3);
-    // Every note line stays inside the quote; none escape into body text.
-    expect(markdown).toContain('> First thought.');
-    expect(markdown).toContain('> Second thought.');
+    // Two paragraphs of plain copy, each on its own line, rather than two
+    // quoted lines held together as one block.
+    expect(markdown).toContain('First thought.\n\nSecond thought.');
+    expect(markdown).not.toMatch(/^>/m);
   });
 
   test('preserves the note verbatim, including punctuation', () => {
@@ -56,16 +64,26 @@ describe('personal note', () => {
   });
 
   test('carries no lead-in of its own, in any language', () => {
+    // Each language's own intro, because the note is placed relative to it
+    // rather than at a fixed offset from the top of the page.
+    const INTROS = {
+      en: 'this special occasion',
+      ru: 'этот особенный день',
+      ceb: 'niining espesyal nga okasyon',
+    } as const;
+
     for (const language of ['en', 'ru', 'ceb'] as const) {
       const { markdown } = render(
         input({ language, personalNote: 'Magkita ta!' }),
       );
 
-      // The quote IS the note. A lead-in such as "A note for you" would state
-      // what the aside already makes plain, so the first quoted line is the
-      // note itself in every language.
-      const firstQuote = markdown.split('\n').find((line) => line.startsWith('>'));
-      expect(firstQuote).toBe('> Magkita ta!');
+      // The note IS the copy. A lead-in such as "A note for you" would state
+      // what the greeting already says, so the line after the intro is the
+      // note itself in every language, with nothing added in front of it.
+      const lines = markdown.split('\n');
+      const introAt = lines.findIndex((line) => line.includes(INTROS[language]));
+      expect(introAt).toBeGreaterThan(-1);
+      expect(lines[introAt + 2]).toBe('Magkita ta!');
     }
   });
 

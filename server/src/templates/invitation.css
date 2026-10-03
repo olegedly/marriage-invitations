@@ -45,9 +45,17 @@
   /*
    * The smaller copy size, shared so the intro paragraph and the explainer under
    * the calls to action are the same size by construction, rather than by two
-   * values that happen to agree.
+   * values that happen to agree. The personal note is set at this size too: it
+   * continues the intro rather than standing apart from it.
    */
   --copy-small: 9pt;
+
+  /*
+   * The rhythm between the blocks of the copy column. Named because the
+   * paragraphs of a stored note stand in for blocks of their own and have to be
+   * spaced by the same gap (see "Personal note" below).
+   */
+  --copy-gap: 4mm;
 }
 
 @page {
@@ -294,7 +302,7 @@ body > section.details {
    * be spent on a personal note that may not be there at all. One gap means an
    * absent note leaves no trace.
    */
-  gap: 4mm;
+  gap: var(--copy-gap);
   /*
    * The frame is page two's background, anchored to the top of the section and
    * exactly one page tall. It is opaque artwork with its own paper colour, so it
@@ -324,10 +332,24 @@ body > section.details {
   margin: 0 auto;
 }
 
-/* The intro paragraph, directly under the greeting: it carries the practical
-   detail about the ceremony, so it is set at the shared small copy size and keeps
-   less leading than the rest to stay compact at that length. */
-.details > p:first-child + p {
+/*
+ * The opening copy: the intro paragraph, directly under the greeting, and the
+ * optional personal note that follows it.
+ *
+ * The note is not set apart. It reads as a continuation of the intro — the next
+ * paragraph of the same letter — so both carry the shared small copy size and
+ * the same leading: the intro because it holds the practical detail about the
+ * ceremony and that size keeps it compact, the note because a larger size or
+ * looser leading would make it the aside the copy no longer makes it.
+ *
+ * The second paragraph selector is every paragraph between the intro and the
+ * time heading, which is exactly the note (see render.ts). Anchoring on the
+ * heading rather than counting the blocks below keeps a note of any number of
+ * paragraphs in that group, and survives the calls to action gaining or losing
+ * one.
+ */
+.details > p:first-child + p,
+.details > p:first-child + p ~ p:has(~ h2) {
   font-size: var(--copy-small);
   line-height: 1.45;
 }
@@ -341,32 +363,42 @@ body > section.details {
 /* ---------- Personal note ---------- */
 
 /*
- * The optional hand-written paragraph. It is set apart typographically — its
- * own background and rule — and carries no vertical margin of its own, so it is
- * separated from its neighbours by the column's gap like every other block.
- * It is kept together so a short note never splits across pages.
+ * A note drawn from the form is already an ordinary paragraph (see render.ts),
+ * so it needs no rule of its own: the copy above gives it the intro's size and
+ * leading, and the column's gap spaces it from its neighbours.
+ *
+ * Markdown stored before the note became ordinary copy still carries it as a
+ * blockquote. History keeps the markdown an invitation was generated with, and
+ * GET /api/history/:id/pdf serves that markdown under this stylesheet, so the
+ * blockquote is flattened to the same plain copy rather than keeping a
+ * distinction a freshly generated invitation no longer has. Every property the
+ * old rule set gave it is reset explicitly, so its box cannot reappear.
  */
 .details blockquote {
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 4mm 5mm;
-  border-left: 0.6mm solid var(--gold);
-  background: var(--paper-deep);
-  font-style: italic;
-  font-size: 10.5pt;
-  color: var(--ink-soft);
-  break-inside: avoid;
-  page-break-inside: avoid;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-style: normal;
+  font-size: var(--copy-small);
+  line-height: 1.45;
+  color: inherit;
 }
 
+/*
+ * The paragraphs of a stored note stand in for blocks of the column, so they
+ * are spaced by the column's own gap. The last one keeps no margin of its own:
+ * the gap that follows belongs to the next block.
+ */
 .details blockquote p {
-  margin: 0 0 2mm;
+  margin: 0;
   orphans: 2;
   widows: 2;
 }
 
-.details blockquote p:last-child {
-  margin-bottom: 0;
+.details blockquote p + p {
+  margin-top: var(--copy-gap);
 }
 
 /* ---------- Date, time and calls to action ---------- */
@@ -448,8 +480,13 @@ body > section.details {
  * Page-break hygiene
  * ------------------------------------------------------------------------- */
 
-h2,
-blockquote {
+/*
+ * The time heading rules the copy off from the detail below it, so it must not
+ * be the last thing on a page. A note is ordinary copy now and may break like
+ * any other paragraph, so blockquotes are not held together here: a long stored
+ * note would otherwise jump to a fresh sheet where a note generated today flows.
+ */
+h2 {
   break-inside: avoid;
   page-break-inside: avoid;
 }

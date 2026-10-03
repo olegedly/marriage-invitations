@@ -231,6 +231,7 @@ describe('renderInvitation — the two-page structure', () => {
       .map((line) => line.trim())
       .filter(Boolean)[1];
     expect(firstLine).toBe('Dear **Loimie**');
-    expect(details).toContain('> See you there.');
+    // The note is copy like any other, not an aside quoting the couple.
+    expect(details).toContain('\nSee you there.\n');
   });
 });

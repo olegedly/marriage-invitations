@@ -528,21 +528,6 @@ button.ghost:disabled {
   overflow-wrap: anywhere;
 }
 
-.preview-note {
-  margin: 0 0 12px;
-  padding: 10px 13px;
-  border-left: 3px solid var(--line);
-  background: var(--accent-soft);
-  border-radius: 0 7px 7px 0;
-  font-style: italic;
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-
-.preview-note p {
-  margin: 0;
-}
-
 .preview-filename {
   margin: 16px 0 0;
   padding-top: 12px;

@@ -43,11 +43,7 @@ export function Preview(props: {
 
               return (
                 <Show when={block.kind === 'heading'} fallback={
-                  <Show when={block.kind === 'quote'} fallback={
-                    <p class="preview-line">{content()}</p>
-                  }>
-                    <blockquote class="preview-note">{content()}</blockquote>
-                  </Show>
+                  <p class="preview-line">{content()}</p>
                 }>
                   <h3 class="preview-time">{content()}</h3>
                 </Show>

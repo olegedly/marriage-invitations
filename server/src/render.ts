@@ -222,7 +222,7 @@ function introForm(input: GenerationInput): IntroForm {
  *   <section class="details">    <- page two, the invitation copy
  *     greeting + guest name      <- opens the page; the cover holds the title
  *     intro
- *     [personal note block]      <- optional, never breaks the reading flow
+ *     [personal note]            <- optional, the paragraphs after the intro
  *     ## date and time
  *     ## join / add to calendar
  *     closing
@@ -288,14 +288,20 @@ export function renderInvitation(
   lines.push('');
 
   if (personalNote && personalNote.trim()) {
-    // The note is a blockquote and nothing else: no lead-in such as "A note for
-    // you", because a quoted aside set apart from the copy already reads as one.
+    // The note is ordinary copy and nothing else. It is not a blockquote: an
+    // aside would set the couple's own words apart from the letter they are
+    // part of. It carries no lead-in either ("A note for you" would state what
+    // the greeting already says), so it is simply the paragraph that follows
+    // the intro. A blank line the writer put in becomes a paragraph break of
+    // its own rather than a separator inside one quoted block.
     for (const paragraph of personalNote.trim().split(/\n{2,}/)) {
-      lines.push(`> ${paragraph.trim()}`);
-      lines.push('>');
+      // A lone newline is joined rather than left in the line: markdown turns
+      // a soft line break into a space when it renders the PDF, and the text
+      // preview reads one line as one block, so joining it here is what keeps
+      // the two showing the same paragraph.
+      lines.push(paragraph.trim().replace(/\s*\n\s*/g, ' '));
+      lines.push('');
     }
-    lines.pop();
-    lines.push('');
   }
 
   lines.push(`## ${timeLine}`);

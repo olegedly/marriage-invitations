@@ -2,8 +2,8 @@
  * Turn the invitation's markdown into readable text for the preview.
  *
  * The preview exists so the operator can read the wording before generating, so
- * this renders the copy as it reads — bold, headings, a blockquote, links —
- * rather than showing markdown syntax.
+ * this renders the copy as it reads — bold, headings, links — rather than
+ * showing markdown syntax.
  *
  * It is deliberately not a general markdown parser. It handles exactly the
  * constructs renderInvitation emits (see server/src/render.ts), and anything it
@@ -21,8 +21,7 @@ export type InlineNode =
 
 export type BlockNode =
   | { kind: 'heading'; inline: InlineNode[] }
-  | { kind: 'paragraph'; inline: InlineNode[] }
-  | { kind: 'quote'; inline: InlineNode[] };
+  | { kind: 'paragraph'; inline: InlineNode[] };
 
 /** Inline pattern: `code`-free, so a stray asterisk survives as text. */
 const INLINE = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
@@ -87,9 +86,9 @@ export function parseInline(line: string): InlineNode[] {
 /**
  * Parse the markdown into blocks.
  *
- * A blockquote is one block even when the renderer separates its lines with a
- * bare ">", so the note reads as a single aside — matching how it renders in
- * the PDF rather than how it is stored.
+ * One line is one block, which is all the copy needs: every block the renderer
+ * emits — the greeting, the intro, each paragraph of the personal note, the
+ * closing — is a single line, so no construct spans lines.
  */
 export function parseMarkdown(markdown: string): BlockNode[] {
   const blocks: BlockNode[] = [];
@@ -101,21 +100,6 @@ export function parseMarkdown(markdown: string): BlockNode[] {
 
     if (line.startsWith('## ')) {
       blocks.push({ kind: 'heading', inline: parseInline(line.slice(3)) });
-    } else if (line.startsWith('>')) {
-      // The "> " prefix is stripped; a bare ">" contributes nothing, which is
-      // how a paragraph break inside the note is already represented.
-      const content = line.replace(/^>\s?/, '');
-      const inline = content === '' ? [] : parseInline(content);
-
-      const previous = blocks[blocks.length - 1];
-      if (previous && previous.kind === 'quote' && content !== '') {
-        previous.inline.push({ kind: 'text', value: ' ' }, ...inline);
-      } else if (previous && previous.kind === 'quote' && content === '') {
-        // Ignore: the blank quote line is a separator, not content.
-        continue;
-      } else if (content !== '') {
-        blocks.push({ kind: 'quote', inline });
-      }
     } else if (line.startsWith('<')) {
       // Raw HTML: the cover. Its tags are layout, but the words inside them are
       // copy the guest reads, so they are shown with the markup stripped and an
