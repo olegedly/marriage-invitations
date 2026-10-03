@@ -1,0 +1,109 @@
+name: CI/CD
+
+# Pull requests and pushes to main are tested. Only a push to main publishes an
+# image and asks Coolify to redeploy, so a pull request can never ship.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# One deploy at a time: a superseded run is cancelled rather than racing the
+# newer one to the same Coolify resource.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # puppeteer's install script downloads the browser the PDF test renders
+      # with (npm 12 gates install scripts; .npmrc opts these packages in).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck the client
+        run: npx tsc --noEmit -p client/tsconfig.json
+
+      # Typechecks the tests, then runs all 143 of them — including the one that
+      # launches Chromium and asserts real PDF bytes come out.
+      - name: Test
+        run: npm test
+
+      - name: Build client and server
+        run: npm run build
+
+  build:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # latest is what Coolify pulls; the sha tag is a rollback handle, so a bad
+      # deploy can be reverted by pinning the previous commit's tag.
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      # Fail loudly rather than skip: a silent no-op deploy is worse than a red
+      # run that names the two secrets to create (README → Deployment).
+      - name: Check the Coolify secrets exist
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          missing=""
+          [ -n "$WEBHOOK_URL" ] || missing="$missing WEBHOOK_URL"
+          [ -n "$WEBHOOK_SECRET" ] || missing="$missing WEBHOOK_SECRET"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing — see README → Deployment → CI/CD"
+            exit 1
+          fi
+
+      # Coolify's deploy API: POST /api/v1/deploy?uuid=<resource-uuid> with an
+      # API token as the bearer. Coolify ignores ref/sha; they are sent so the
+      # response and any proxy log record which commit triggered the deploy.
+      - name: Trigger Coolify deployment
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST "${{ secrets.WEBHOOK_URL }}" \
+            --header "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+            --header "Content-Type: application/json" \
+            --data '{"ref":"${{ github.ref }}","sha":"${{ github.sha }}"}'

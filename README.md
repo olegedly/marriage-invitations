@@ -231,9 +231,47 @@ runtime stage carries only production dependencies, Chromium and fonts.
 - **Chromium** comes from the distro (`PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`),
   and `PUPPETEER_SKIP_DOWNLOAD` avoids a redundant bundled copy.
 
-On Coolify, point the service at this repository and mount a persistent volume
-at `/data`. CI deploying on push can follow the same pattern as existing
-projects.
+On Coolify the app runs the image CI publishes — see below. The only thing the
+service needs is a persistent volume at `/data`.
+
+### CI/CD
+
+`.github/workflows/deploy.yml` runs on every pull request and push to `main`:
+
+| Stage | What it does |
+| --- | --- |
+| `test` | `npm ci`, client typecheck, the full test suite (including the real-Chromium PDF test), full build |
+| `build` | on `main` only: builds the image, pushes `ghcr.io/olegedly/marriage-invitations:latest` and `:sha-<commit>`, cached through BuildKit |
+| `deploy` | on `main` only: POSTs the Coolify deploy webhook, which pulls `:latest` and restarts |
+
+Two repository secrets drive the deploy (Settings → Secrets and variables →
+Actions):
+
+| Secret | Value |
+| --- | --- |
+| `WEBHOOK_URL` | `https://coolify.olegedly.com/api/v1/deploy?uuid=<resource-uuid>` |
+| `WEBHOOK_SECRET` | a Coolify API token (Coolify → Keys & Tokens → API tokens) |
+
+The `uuid` is the Coolify resource's own UUID, visible in its URL in the UI.
+Until both secrets exist the `deploy` job fails with a message naming them —
+deliberately, so that a missing secret cannot look like a successful deploy.
+
+### Coolify
+
+1. **New Resource → Docker Compose**, then paste `docker-compose.coolify.yml`.
+2. Set the domain to `marry.oleg.date`. Coolify's Traefik edge terminates TLS;
+   the service publishes no host port.
+3. Add a persistent volume mounted at `/data`, so history survives redeploys.
+4. Give Coolify credentials for GHCR. The workflow pushes with the built-in
+   `GITHUB_TOKEN`, and GitHub packages start **private** even in a public
+   repository: either switch the package's visibility to public (Package
+   settings → Change visibility) or register a `read:packages` token under
+   Coolify → Registry.
+5. Put the resource UUID in the `WEBHOOK_URL` secret, then push to `main` (or run
+   the workflow by hand) to deploy.
+
+Every redeploy pulls `:latest`, so the previous `:sha-<commit>` tag is the
+rollback: pin it in the compose file to revert a bad deploy.
 
 ### Environment variables
 

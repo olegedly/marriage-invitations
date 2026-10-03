@@ -1,0 +1,26 @@
+# Copy-paste note for the Coolify UI — this file is not used by CI or by
+# `docker compose up`. Create the resource in Coolify as a Docker Compose
+# resource and paste this in.
+#
+# The deployment flow: GitHub Actions builds ghcr.io/olegedly/marriage-invitations,
+# pushes it, then POSTs the Coolify deploy webhook; Coolify pulls :latest and
+# restarts the service. Coolify's Traefik edge terminates TLS and routes
+# marry.oleg.date to the exposed port, so nothing is published to the host —
+# and X-Forwarded-Host/-Proto reach Fastify, which is what keeps the guest's
+# .ics link pointing at https://marry.oleg.date rather than a container name.
+services:
+  invitations:
+    image: "ghcr.io/olegedly/marriage-invitations:latest"
+    pull_policy: always
+    expose:
+      - "3000"
+    volumes:
+      # History survives redeploys. DATABASE_PATH=/data/history.sqlite and the
+      # HEALTHCHECK are already baked into the image.
+      - "invitations_data:/data"
+    # PUBLIC_BASE_URL is deliberately unset: the calendar link is derived from
+    # the request. Set it only if the app is reached by a name the request does
+    # not carry.
+
+volumes:
+  invitations_data: null
