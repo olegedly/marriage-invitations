@@ -9,7 +9,9 @@
  * constructs renderInvitation emits (see server/src/render.ts), and anything it
  * does not recognise passes through as literal text, which is the safe default
  * for something an operator proofreads. Styling a construct it missed would
- * show it as noise; hiding it would hide copy.
+ * show it as noise; hiding it would hide copy. The one exception is the cover,
+ * which is emitted as raw HTML: its tags are dropped so the wording they wrap
+ * is still read (see server/src/cover.ts).
  */
 
 export type InlineNode =
@@ -25,6 +27,40 @@ export type BlockNode =
 
 /** Inline pattern: `code`-free, so a stray asterisk survives as text. */
 const INLINE = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+
+/** The entities the cover emits, plus the numeric forms. */
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
+
+function decodeEntities(value: string): string {
+  return value.replace(/&(#\d+|#x[0-9a-f]+|[a-z]+);/gi, (match, name: string) => {
+    const key = name.toLowerCase();
+    if (key.startsWith('#x')) return String.fromCodePoint(parseInt(key.slice(2), 16));
+    if (key.startsWith('#')) return String.fromCodePoint(Number(key.slice(1)));
+    return ENTITIES[key] ?? match;
+  });
+}
+
+/**
+ * The readable text of one line of raw HTML.
+ *
+ * The cover (server/src/cover.ts) is written as markup because its layout is
+ * its content: an arched photograph, names, a date. The operator proofreads the
+ * wording, so the tags are dropped and what remains is shown; an element that
+ * carries no text — the photograph, a wrapper — contributes nothing rather than
+ * a line of angle brackets.
+ */
+function htmlText(line: string): string {
+  return decodeEntities(line.replace(/<[^>]*>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 /** Parse the inline spans of one line. */
 export function parseInline(line: string): InlineNode[] {
@@ -82,6 +118,14 @@ export function parseMarkdown(markdown: string): BlockNode[] {
         continue;
       } else if (content !== '') {
         blocks.push({ kind: 'quote', inline });
+      }
+    } else if (line.startsWith('<')) {
+      // Raw HTML: the cover. Its tags are layout, but the words inside them are
+      // copy the guest reads, so they are shown with the markup stripped and an
+      // empty element is skipped entirely.
+      const text = htmlText(line);
+      if (text !== '') {
+        blocks.push({ kind: 'paragraph', inline: [{ kind: 'text', value: text }] });
       }
     } else {
       blocks.push({ kind: 'paragraph', inline: parseInline(line) });

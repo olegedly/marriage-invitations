@@ -15,7 +15,8 @@ import { discoverBrowser } from './browser.js';
 export type PdfRenderer = (markdown: string, css: string) => Promise<Buffer>;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const STYLESHEET = join(HERE, 'templates', 'invitation.css');
+const TEMPLATES = join(HERE, 'templates');
+const STYLESHEET = join(TEMPLATES, 'invitation.css');
 
 let cachedCss: string | null = null;
 
@@ -48,6 +49,15 @@ const chromiumRenderer: PdfRenderer = async (markdown, css) => {
     {
       css,
       body_class: ['invitation'],
+      /*
+       * The images and script fonts the stylesheet and the cover reference are
+       * served from here. md-to-pdf serves `basedir` over HTTP and loads the
+       * page from it before swapping in the generated HTML, so `images/...` and
+       * `fonts/...` resolve against this directory rather than the process's
+       * working directory — which is what lets the same relative paths work in
+       * development (src/templates) and in the container (dist/templates).
+       */
+      basedir: TEMPLATES,
       pdf_options: {
         format: 'A5',
         printBackground: true,

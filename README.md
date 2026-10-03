@@ -34,6 +34,53 @@ The markdown is the record of what was said; the PDF is what it looks like. The
 stylesheet at `server/src/templates/invitation.css` is used only for generation
 and is not shared with the UI.
 
+## The two pages
+
+The invitation is two A5 sheets, and `renderInvitation()` returns them as one
+markdown document holding exactly two sections:
+
+- **Page one — the save-the-date.** The couple's photograph in an arch, the
+  names set in a script face, the date and the venue. This section
+  (`<section class="cover">`) is raw HTML, because on this page the layout *is*
+  the content: markdown has no syntax for an arched photograph or stacked script
+  names. It is emitted by `server/src/cover.ts`.
+- **Page two — the invitation copy.** The greeting, the intro, the optional
+  personal note, the time with its two calls to action, and the closing, all
+  inside `<section class="details">` on the floral frame as its background.
+
+Both sections are part of the stored markdown, so *Original* re-downloads
+reproduce the cover as it was generated rather than rebuilding it from today's
+constants.
+
+The page breaks and the copy live in the markdown; only the appearance lives in
+the stylesheet. A personal note longer than the sheet can hold runs onto a plain
+third sheet rather than being clipped — the frame is anchored to the top of page
+two at exactly one page tall, so it never stretches or distorts.
+
+### Where the artwork and typefaces live
+
+`server/src/templates/` holds everything the PDF needs beyond the words:
+
+| Path | What it is |
+| --- | --- |
+| `invitation.css` | the one shared template stylesheet |
+| `images/frame.jpg` | page two's background |
+| `images/photo.jpg` | the cover photograph |
+| `fonts/GreatVibes-Regular.ttf` | script face for Latin names |
+| `fonts/MarckScript-Regular.ttf` | script face for Cyrillic names |
+
+The renderer serves this directory over HTTP and points Chromium at it
+(`basedir` in `server/src/pdf.ts`), which is why the stylesheet can reference
+`images/photo.jpg` by a relative path that works both in development
+(`src/templates`) and in the container (`dist/templates`). The two script files
+are one CSS family split by `unicode-range`, so "Oleg & Rose" and "Олег & Роуз"
+both come out hand-written.
+
+The palette is sampled from the frame, so the cover and the copy always match
+the artwork: the cream sheet, gold rules and olive ink in `:root` at the top of
+the stylesheet are the frame's own colours. Swapping `images/frame.jpg` means
+re-sampling that block.
+
 ## History and re-downloads
 
 Every generation is saved, and each entry offers three actions:
@@ -85,9 +132,12 @@ invitations that were actually sent.
 The client parses that markdown into readable blocks (`client/src/preview-text.ts`).
 It is not a general markdown parser: it handles exactly the constructs the
 renderer emits, and anything it does not recognise passes through as literal
-text, so copy is never silently hidden. Links render as their own label, because
-the calendar link's URL is an absolute address built from the request origin and
-a raw URL would interrupt the prose.
+text, so copy is never silently hidden. The cover is the one exception on both
+counts: it is recognised, and its tags are stripped so the wording inside them —
+"Save the date", the names, the date, the venue — is proofread as text rather
+than shown as markup. Links render as their own label, because the calendar
+link's URL is an absolute address built from the request origin and a raw URL
+would interrupt the prose.
 
 The calendar link in a preview is built from the request origin, exactly as in a
 PDF (see below), so it is the link the guest would actually get.
@@ -98,6 +148,8 @@ PDF (see below), so it is the link the guest would actually get.
 - A Chromium/Chrome build for PDF rendering
 - For non-Latin text in the PDF: fonts covering Cyrillic and Latin
   (`fonts-noto-core`, `fonts-dejavu-core`). The Docker image installs these.
+  The cover's script faces do not depend on them: they ship with the app as
+  files under `server/src/templates/fonts/`.
 
 ## Running locally
 
@@ -274,7 +326,8 @@ runtime stage carries only production dependencies, Chromium and fonts.
 - **History** is stored at `/data/history.sqlite` — mount a volume to keep it
   across redeploys.
 - **Fonts** are installed explicitly. Without them, Cyrillic guest names render
-  as boxes in the PDF.
+  as boxes in the PDF. The cover's script faces are the exception: they are
+  served from `templates/fonts/` with the stylesheet, so they need no package.
 - **Chromium** comes from the distro (`PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`),
   and `PUPPETEER_SKIP_DOWNLOAD` avoids a redundant bundled copy.
 
@@ -344,12 +397,15 @@ server/
     countries.ts      ← the full ISO 3166-1 list and each country's primary zone
     timezone.ts       ← curated overrides, country → zone, offset formatting
     render.ts         ← markdown generation (the core)
+    cover.ts          ← the save-the-date page, authored as HTML
     calendar.ts       ← .ics + Google Calendar link
     pdf.ts            ← md-to-pdf adapter (injectable)
     history.ts        ← SQLite history
     app.ts            ← Fastify routes
     templates/
       invitation.css  ← the one shared template stylesheet
+      images/         ← the frame background and the cover photograph
+      fonts/          ← the script faces for the couple's names
   test/
 client/
   index.html          ← also declares the favicon links

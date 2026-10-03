@@ -162,6 +162,8 @@ export function formatOffset(offsetMinutes: number): string {
 export interface LocalTime {
   /** Wall-clock date and time at the destination, e.g. "Tuesday, 13 October 2026, 18:10". */
   readonly formatted: string;
+  /** Wall-clock date only at the destination, e.g. "Tuesday, 13 October 2026". */
+  readonly date: string;
   /** Numeric offset label, e.g. "UTC+3". */
   readonly offset: string;
 }
@@ -198,7 +200,14 @@ export function localTime(
     hour12: false,
   }).format(shifted);
 
-  return { formatted, offset: formatOffset(offsetMinutesEast) };
+  // The cover states the day without a clock time, in the guest's own zone:
+  // the date the ceremony falls on is not the same calendar day everywhere.
+  const date = new Intl.DateTimeFormat(LOCALES[language], {
+    timeZone: 'UTC',
+    dateStyle: 'full',
+  }).format(shifted);
+
+  return { formatted, date, offset: formatOffset(offsetMinutesEast) };
 }
 
 /**

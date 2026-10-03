@@ -1,87 +1,305 @@
 /*
  * The invitation template. Server-side only; used for PDF generation.
  *
- * The markdown structure it is tuned against is fixed by render.ts:
- *   # title / couple names
- *   greeting + guest name
- *   intro paragraph
- *   > optional personal note (blockquote)
- *   ## date and time  (h2, immediately followed by the CTAs)
- *   links, closing
+ * Two A5 pages, one section each (the sections are emitted by render.ts):
+ *   .cover    page one — the save-the-date: photograph, script names, date
+ *   .details  page two — the invitation itself: greeting, intro, optional note,
+ *             the time with its two calls to action, and the closing
+ *
+ * The template is tuned against the fixed markdown structure in render.ts:
+ * everything guest-specific, and every page break, is decided there; this file
+ * only decides how it looks.
+ *
+ * The PDF renderer serves src/templates over HTTP and points Chromium at it, so
+ * `images/...` and `fonts/...` below resolve relative to this stylesheet's
+ * directory (see pdf.ts). That is why the photographs and the script faces can
+ * be referenced by path instead of being inlined as data URIs.
  *
  * Every value is in mm so the sheet is stable regardless of printer defaults.
- * Fonts are requested by family with broad fallbacks, because the PDF must
- * render Cyrillic (Russian) and Latin (English, Cebuano) identically on any
- * machine that builds it.
+ * The body font is requested by family with broad fallbacks, because page two
+ * must render Cyrillic (Russian) and Latin (English, Cebuano) identically on
+ * any machine that builds it. The cover's script face is self-hosted instead,
+ * since no distro package ships a script font with Cyrillic coverage.
  */
+
+/* ---------------------------------------------------------------------------
+ * Palette, sampled from the frame that is page two's background
+ * (images/frame.jpg). The values below are the frame's own: a cream sheet,
+ * gold rules, and a deep olive for the foliage and lettering.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --page-w: 148mm;
+  --page-h: 210mm;
+
+  --paper: #fdf4d9; /* the frame's centre, srgb(254, 245, 216) */
+  --paper-deep: #f6e8bf; /* its shaded corners */
+  --ink: #514724; /* body copy, darkened from the frame's olive srgb(103, 97, 48) */
+  --ink-soft: #756a44; /* secondary copy */
+  --gold: #c2a24a; /* hairline rules, from the frame's border srgb(192, 173, 115) */
+  --gold-deep: #8a6b1f; /* headings and script names, from srgb(219, 158, 52) */
+
+  /* A narrow measure keeps the copy clear of the frame's floral corners. */
+  --measure: 86mm;
+}
 
 @page {
   size: A5 portrait;
   margin: 0;
 }
 
+/* ---------------------------------------------------------------------------
+ * Script faces for the couple's names.
+ *
+ * "Invitation Script" is one family built from two files: Great Vibes covers
+ * Latin, Marck Script covers Cyrillic. Neither file covers both, and a single
+ * family with unicode-range lets the browser choose per character, so a guest
+ * reading "Олег & Роуз" gets the same treatment as one reading "Oleg & Rose".
+ *
+ * Both are script faces: they are the italic, hand-written lettering the
+ * invitation asks for by construction. Neither ships an italic cut, so
+ * font-style stays normal — asking for italic would make Chromium shear the
+ * glyphs to fake an oblique and spoil the letterforms.
+ * ------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Invitation Script';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/GreatVibes-Regular.ttf') format('truetype');
+  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF;
+}
+
+@font-face {
+  font-family: 'Invitation Script';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/MarckScript-Regular.ttf') format('truetype');
+  unicode-range: U+0400-04FF, U+0500-052F;
+}
+
+/* ---------------------------------------------------------------------------
+ * Sheet
+ * ------------------------------------------------------------------------- */
+
 html {
   font-size: 11pt;
+  /* The canvas behind everything. Both sections paint their own paper, but a
+     sliver at a page edge should not read as white. */
+  background: var(--paper);
 }
 
 body {
-  /* Serif carries the formal tone; the list covers Cyrillic and Latin. */
-  font-family: 'Noto Serif', 'DejaVu Serif', 'Liberation Serif', Georgia, serif;
-  color: #2b2b2b;
-  line-height: 1.6;
   margin: 0;
   padding: 0;
+
+  font-family: 'Noto Serif', 'DejaVu Serif', 'Liberation Serif', Georgia, serif;
+  color: var(--ink);
+  line-height: 1.6;
   /* Keep long personal notes and guest names inside the sheet. */
   overflow-wrap: break-word;
   hyphens: auto;
 }
 
-/* A5 with no printer margin: the frame supplies the whitespace. */
-main,
-body > * {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-body {
+/*
+ * A sheet is one page. The cover is a fixed composition, so it is exactly a
+ * page tall and clipped; the copy section only has a floor, so a long personal
+ * note overflows into view on a third page rather than being silently cut off.
+ * Both stop a hair under a full page so exact rounding cannot spill a blank
+ * sliver onto another sheet.
+ */
+.cover {
+  width: var(--page-w);
+  height: calc(var(--page-h) - 1mm);
+  overflow: hidden;
+}
+
+.details {
+  width: var(--page-w);
+  min-height: calc(var(--page-h) - 1mm);
+}
+
+/* ---------------------------------------------------------------------------
+ * Page one: the save-the-date cover
+ * ------------------------------------------------------------------------- */
+
+.cover {
+  position: relative;
+  padding: 16mm;
+  background: var(--paper);
+  color: var(--gold-deep);
+  text-align: center;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  break-after: page;
+  page-break-after: always;
+}
+
+/* The card's hairline border, echoing the gold line inside the frame. */
+.cover::after {
+  content: '';
+  position: absolute;
+  inset: 8mm;
+  border: 0.4mm solid var(--gold);
+}
+
+.cover-kicker {
+  margin: 0 0 9mm;
+  font-size: 11.5pt;
+  font-weight: 400;
+  letter-spacing: 0.38em;
+  /* letter-spacing adds a trailing gap; nudge the centred text back. */
+  text-indent: 0.38em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+/* A short rule under the word, rather than a full-width border. */
+.cover-kicker::after {
+  content: '';
+  display: block;
+  width: 30mm;
+  height: 0.3mm;
+  margin: 4.5mm auto 0;
+  background: var(--gold);
+}
+
+.cover-photo {
+  margin: 0;
+}
+
+/*
+ * The arch: a semicircular top, square base. The horizontal radius is half the
+ * photograph's width, which is what makes the corners meet in a true arch
+ * rather than a rounded rectangle.
+ */
+.cover-photo img {
+  display: block;
+  width: 74mm;
+  height: 84mm;
+  object-fit: cover;
+  background: var(--paper-deep);
+  border: 0.5mm solid var(--gold);
+  border-radius: 37mm 37mm 0 0;
+}
+
+.cover-names {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8mm;
+}
+
+.cover-name {
+  margin: 0;
+  font-family: 'Invitation Script', cursive;
+  font-size: 30pt;
+  line-height: 1.05;
+  color: var(--gold-deep);
+}
+
+.cover-amp {
+  margin: 0.5mm 0;
+  font-family: 'Invitation Script', cursive;
+  font-size: 18pt;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.cover-date,
+.cover-venue {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  color: var(--ink-soft);
+}
+
+.cover-date {
+  margin-top: 9mm;
+  font-size: 9.5pt;
+}
+
+.cover-venue {
+  margin-top: 2.5mm;
+  font-size: 8.5pt;
+  color: var(--gold-deep);
+}
+
+/* ---------------------------------------------------------------------------
+ * Page two: the invitation copy on the frame
+ * ------------------------------------------------------------------------- */
+
+.details {
   padding: 16mm 14mm;
+  /*
+   * The frame is page two's background, anchored to the top of the section and
+   * exactly one page tall. It is opaque artwork with its own paper colour, so it
+   * replaces the sheet rather than tinting it. Anchoring and sizing it, rather
+   * than stretching it over the section, keeps it undistorted if a very long
+   * personal note runs the copy onto a further, plain sheet.
+   */
+  background: var(--paper) url('images/frame.jpg') center top / 100% var(--page-h)
+    no-repeat;
 }
 
 /* ---------- Title and couple ---------- */
 
-h1 {
+.details > h1 {
   font-size: 15pt;
   font-weight: 400;
   letter-spacing: 0.18em;
+  text-indent: 0.18em;
   text-transform: uppercase;
   text-align: center;
   margin: 0 0 6mm;
-  color: #6b5b4a;
+  color: var(--gold-deep);
 }
 
 /* The couple line sits directly under the title. */
-h1 + p {
+.details > h1 + p {
   text-align: center;
-  font-size: 13pt;
-  letter-spacing: 0.06em;
-  margin: 0 0 10mm;
+  font-family: 'Invitation Script', cursive;
+  font-size: 26pt;
+  line-height: 1.1;
+  /*
+   * The names span the sheet rather than the body measure. Without this they
+   * would inherit that measure from the rule below, and its left-flush box
+   * would centre them 17mm left of the page — while the title above them
+   * stayed put.
+   */
+  max-width: none;
+  margin: 0 0 8mm;
+  color: var(--gold-deep);
 }
 
-h1 + p a {
+.details > h1 + p a {
   color: inherit;
   text-decoration: none;
-  border-bottom: 0.2mm solid #c9b8a3;
+  border-bottom: 0.2mm solid var(--gold);
 }
 
 /* ---------- Greeting and body ---------- */
 
-/* Greeting line: the guest's name is emphasised by the template, not by CSS. */
-h1 + p + p {
+/* The guest's name is emphasised by the template, not by CSS. */
+.details > h1 + p + p {
   font-size: 12pt;
-  margin: 0 0 5mm;
+  margin: 0 auto 5mm;
 }
 
-p {
-  margin: 0 0 5mm;
+.details > p {
+  max-width: var(--measure);
+  margin: 0 auto 5mm;
   text-align: left;
 }
 
@@ -92,86 +310,97 @@ p {
  * reads as a personal aside rather than competing with the formal copy, and it
  * is kept together so a short note never splits across pages.
  */
-blockquote {
-  margin: 6mm 0;
+.details blockquote {
+  max-width: var(--measure);
+  margin: 6mm auto;
   padding: 4mm 5mm;
-  border-left: 0.6mm solid #c9b8a3;
-  background: #faf7f3;
+  border-left: 0.6mm solid var(--gold);
+  background: var(--paper-deep);
   font-style: italic;
   font-size: 10.5pt;
-  color: #4a4038;
+  color: var(--ink-soft);
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-blockquote p {
+.details blockquote p {
   margin: 0 0 2mm;
-  /* Measure cap keeps a longer note readable and prevents it running wide. */
-  max-width: 78ch;
   orphans: 2;
   widows: 2;
 }
 
-blockquote p:last-child {
+.details blockquote p:last-child {
   margin-bottom: 0;
 }
 
 /* ---------- Date, time and calls to action ---------- */
 
-h2 {
+.details > h2 {
   font-size: 12pt;
   font-weight: 400;
   letter-spacing: 0.04em;
   text-align: center;
-  margin: 10mm 0 6mm;
+  max-width: var(--measure);
+  margin: 8mm auto 6mm;
   padding-top: 6mm;
-  border-top: 0.2mm solid #e0d6c8;
-  color: #6b5b4a;
+  border-top: 0.2mm solid var(--gold);
+  color: var(--gold-deep);
   break-after: avoid;
   page-break-after: avoid;
 }
 
 /* The CTAs are the two links immediately after the time heading. */
-h2 ~ p a {
-  color: #6b5b4a;
+.details > h2 ~ p a {
+  color: var(--gold-deep);
   text-decoration: none;
-  border-bottom: 0.2mm solid #c9b8a3;
+  border-bottom: 0.2mm solid var(--gold);
 }
 
-h2 + p,
-h2 + p + p {
+.details > h2 + p,
+.details > h2 + p + p {
   text-align: center;
   font-size: 11.5pt;
   margin-bottom: 3mm;
 }
 
 /* The explainer sentence under the calendar link. */
-h2 + p + p + p {
+.details > h2 + p + p + p {
   text-align: center;
   font-size: 9pt;
-  color: #8a7f72;
-  margin-bottom: 8mm;
+  color: var(--ink-soft);
+  margin-bottom: 7mm;
 }
 
 /* ---------- Closing ---------- */
 
-/* Final two paragraphs: the sign-off and the repeated names. */
-p:nth-last-child(2),
-p:nth-last-child(1) {
+/* The final two paragraphs: the sign-off and the repeated names. */
+.details > p:nth-last-child(2),
+.details > p:nth-last-child(1) {
   text-align: center;
+  max-width: none;
   margin-bottom: 2mm;
 }
 
-p:nth-last-child(2) {
-  margin-top: 6mm;
+.details > p:nth-last-child(2) {
+  margin-top: 5mm;
 }
 
-p:nth-last-child(1) a {
+/* The repeated names are set in the same script as the cover. */
+.details > p:nth-last-child(1) {
+  font-family: 'Invitation Script', cursive;
+  font-size: 20pt;
+  line-height: 1.2;
+  color: var(--gold-deep);
+}
+
+.details > p:nth-last-child(1) a {
   color: inherit;
   text-decoration: none;
 }
 
-/* ---------- Page-break hygiene ---------- */
+/* ---------------------------------------------------------------------------
+ * Page-break hygiene
+ * ------------------------------------------------------------------------- */
 
 h1,
 h2,

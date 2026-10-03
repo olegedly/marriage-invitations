@@ -8,6 +8,8 @@
 
 import { describe, expect, test, vi } from 'vitest';
 import { generatePdf, type PdfRenderer } from '../src/pdf.js';
+import { renderInvitation } from '../src/render.js';
+import { guestInput } from './support/render.js';
 
 const MARKDOWN = '# Our Wedding\n\nHello.';
 
@@ -74,4 +76,50 @@ describe('real PDF output', () => {
     },
     120_000,
   );
+
+  test(
+    'lays the invitation out on exactly two pages',
+    async () => {
+      const { markdown } = renderInvitation(guestInput(), {
+        baseUrl: 'https://test.invalid',
+      });
+      const pdf = await generatePdf(markdown);
+
+      expect(pageCount(pdf)).toBe(2);
+    },
+    120_000,
+  );
+
+  test(
+    'embeds both the cover photograph and the frame background',
+    async () => {
+      // Chromium drops an image it cannot load, so two image objects is what
+      // proves the paths in the stylesheet and the cover actually resolved
+      // against the served templates directory (see pdf.ts).
+      const { markdown } = renderInvitation(guestInput(), {
+        baseUrl: 'https://test.invalid',
+      });
+      const pdf = await generatePdf(markdown);
+
+      expect(imageCount(pdf)).toBe(2);
+    },
+    120_000,
+  );
 });
+
+/**
+ * Read a value out of the PDF's page tree.
+ *
+ * Enough to hold the layout to its contract without pulling in a PDF parser:
+ * Chromium writes `/Type /Pages /Count n` for the tree and one `/Subtype /Image`
+ * per embedded image, and neither is compressed.
+ */
+function pageCount(pdf: Buffer): number {
+  const match = pdf.toString('latin1').match(/\/Type\s*\/Pages\s*\/Count\s+(\d+)/);
+  if (!match?.[1]) throw new Error('no page count in the PDF');
+  return Number(match[1]);
+}
+
+function imageCount(pdf: Buffer): number {
+  return (pdf.toString('latin1').match(/\/Subtype\s*\/Image/g) ?? []).length;
+}

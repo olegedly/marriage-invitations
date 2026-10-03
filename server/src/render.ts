@@ -10,6 +10,7 @@
 import { EVENT, type EventConstants, type Language, type Person } from './event.js';
 import { labelFor, localTime, zoneForCountry } from './timezone.js';
 import { calendarUrl } from './calendar.js';
+import { coverMarkup } from './cover.js';
 
 export type NumberForm = 'singular' | 'plural';
 export type Register = 'formal' | 'informal';
@@ -169,6 +170,12 @@ const CLOSING: Record<Language, string> = {
   ceb: 'Uban sa gugma,',
 };
 
+const SAVE_THE_DATE: Record<Language, string> = {
+  en: 'Save the date',
+  ru: 'Запомните дату',
+  ceb: 'Timan-i ang petsa',
+};
+
 const INTRO_FORMS = ['formalSingular', 'informalSingular', 'plural'] as const;
 type IntroForm = (typeof INTRO_FORMS)[number];
 
@@ -181,13 +188,19 @@ function introForm(input: GenerationInput): IntroForm {
  * Build the full invitation markdown.
  *
  * Structure (fixed, so the single CSS template can be tuned against it):
- *   # title / couple
- *   greeting + guest name
- *   intro
- *   [personal note block]        <- optional, never breaks the reading flow
- *   ## date and time
- *   ## join / add to calendar
- *   closing
+ *   <section class="cover">      <- page one, raw HTML (see cover.ts)
+ *   <section class="details">    <- page two, the invitation copy
+ *     # title / couple
+ *     greeting + guest name
+ *     intro
+ *     [personal note block]      <- optional, never breaks the reading flow
+ *     ## date and time
+ *     ## join / add to calendar
+ *     closing
+ *
+ * The two sections are raw HTML; everything inside the details is ordinary
+ * markdown. The template turns them into pages, so the order here is also the
+ * reading order of the finished PDF.
  */
 export interface RenderOptions {
   /**
@@ -273,8 +286,29 @@ export function renderInvitation(
     `${personName(event.groom, language)} & ${personName(event.bride, language)}`,
   );
 
+  // Page one is the cover; page two is the invitation itself. The details are
+  // wrapped in their own section because that section is what carries the
+  // frame background, so the picture is scoped to the page it belongs to
+  // instead of being positioned against a document that happens to be two
+  // sheets tall (see templates/invitation.css).
+  const cover = coverMarkup({
+    label: SAVE_THE_DATE[language],
+    groom: event.groom[language],
+    bride: event.bride[language],
+    date: time.date,
+    venue: event.venue[language],
+  });
+
   return {
-    markdown: lines.join('\n'),
+    markdown: [
+      cover,
+      '',
+      '<section class="details">',
+      '',
+      lines.join('\n'),
+      '',
+      '</section>',
+    ].join('\n'),
     filename: invitationFilename(guests, language),
   };
 }

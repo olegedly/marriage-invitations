@@ -26,6 +26,14 @@ export interface EventConstants {
   readonly bride: Person;
   /** Invitation title shown on the card. */
   readonly title: Record<Language, string>;
+  /**
+   * Where the ceremony happens, shown on the cover under the date.
+   *
+   * The wedding is online — the groom is in Romania and the bride in the
+   * Philippines — so this is a place to gather rather than a place to travel
+   * to. It is stated once, on the cover; the details page carries the link.
+   */
+  readonly venue: Record<Language, string>;
 }
 
 export const EVENT: EventConstants = {
@@ -47,6 +55,11 @@ export const EVENT: EventConstants = {
     en: 'Our Wedding',
     ru: 'Наша свадьба',
     ceb: 'Among Kasal',
+  },
+  venue: {
+    en: 'Online',
+    ru: 'Онлайн',
+    ceb: 'Online',
   },
 };
 

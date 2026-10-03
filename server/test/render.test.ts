@@ -138,3 +138,65 @@ describe('renderInvitation — English, one guest, formal', () => {
     );
   });
 });
+
+/**
+ * The two pages. The cover is one raw-HTML block and the invitation copy is a
+ * markdown section after it; the template turns those into page one and page
+ * two, so this ordering is the reading order of the finished PDF.
+ */
+describe('renderInvitation — the two-page structure', () => {
+  test('puts the cover first and the invitation copy in its own section', () => {
+    const { markdown } = render(input());
+
+    const cover = markdown.indexOf('<section class="cover">');
+    const details = markdown.indexOf('<section class="details">');
+
+    expect(cover).toBe(0);
+    expect(details).toBeGreaterThan(cover);
+    expect(markdown).toContain('# Our Wedding');
+    expect(markdown.trimEnd().endsWith('</section>')).toBe(true);
+  });
+
+  test('features the photograph and the couple on the cover', () => {
+    const { markdown } = render(input());
+
+    expect(markdown).toContain('<img src="images/photo.jpg"');
+    expect(markdown).toContain('class="cover-name">Oleg<');
+    expect(markdown).toContain('class="cover-name">Rose<');
+  });
+
+  test('dates the cover in the guest own zone, not the couples', () => {
+    // 18:10 in Romania on 13 October is already 02:10 on the 14th in Sydney.
+    // The cover must say the day the guest is living in, exactly as the time
+    // line does — a save-the-date for the wrong day is worse than none.
+    const { markdown } = render(input({ countryCode: 'AU' }));
+
+    expect(markdown).toContain('class="cover-date">Wednesday, 14 October 2026<');
+  });
+
+  test('does not put a clock time on the cover', () => {
+    const { markdown } = render(input({ countryCode: 'RO' }));
+    const cover = markdown.slice(0, markdown.indexOf('<section class="details">'));
+
+    expect(cover).not.toContain('18:10');
+  });
+
+  test('localises the cover label, venue and names', () => {
+    const { markdown } = render(input({ language: 'ru' }));
+
+    expect(markdown).toContain('Запомните дату');
+    expect(markdown).toContain('class="cover-venue">Онлайн<');
+    expect(markdown).toContain('class="cover-name">Олег<');
+  });
+
+  test('keeps the greeting and the note inside the invitation copy', () => {
+    const { markdown } = render(
+      input({ guests: 'Loimie', personalNote: 'See you there.' }),
+    );
+
+    const details = markdown.slice(markdown.indexOf('<section class="details">'));
+
+    expect(details).toContain('Dear **Loimie**');
+    expect(details).toContain('> See you there.');
+  });
+});
