@@ -114,6 +114,24 @@ The renderer serves this directory over HTTP and points Chromium at it
 are one CSS family split by `unicode-range`, so "Oleg & Rose" and "Олег и Роуз"
 both come out hand-written.
 
+Both images stay JPEG on purpose, and stay sized to what the page shows.
+Chromium copies a JPEG's compressed stream into the PDF untouched: `pdfimages
+-list` reports the embedded object as `jpeg` at the source's own file size, and
+extracting it yields a byte-identical file. Source bytes therefore map
+one-to-one onto the guest's download. Every other format is decoded and
+embedded as a raw raster instead — a WebP at a quarter of the bytes produced a
+PDF 3.5× *larger* than the JPEG it replaced, so "modern format" is the
+expensive choice here.
+
+The sizes follow the two display boxes, not the other way round.
+`images/photo.jpg` fills 74×84mm (`.cover-photo img`), so 900px wide is 300 ppi,
+the print standard. `images/frame.jpg` is stretched across a whole A5 at 100%
+width, which makes it 176 ppi — the resolution-limited asset rather than an
+oversized one, so it keeps its pixels and its 4:4:4 chroma, and is only ever
+re-encoded losslessly (`jpegtran -optimize -progressive`). Dropping it to 4:2:0
+shifts the gold hairlines across the whole sheet. Together the two files are
+~95% of the PDF, so this is the only place page weight is won or lost.
+
 The palette is sampled from the frame, so the cover and the copy always match
 the artwork: the cream sheet, gold rules and olive ink in `:root` at the top of
 the stylesheet are the frame's own colours. Swapping `images/frame.jpg` means
