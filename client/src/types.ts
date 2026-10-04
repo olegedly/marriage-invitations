@@ -80,13 +80,15 @@ export const LANGUAGE_LABELS: Record<Language, string> = {
  * guest is left to conclude the rest; copy that says "this was written for you"
  * would defeat itself.
  *
- * The Russian is the groom's voice, so its past tense is masculine — that is
- * the speaker's gender, not the guest's. The Cebuano has no gender agreement
- * and has not been checked by a native speaker.
+ * The Russian is the groom's voice. Its new version has no gendered form at
+ * all — the first person is left out entirely — so it would stay correct if the
+ * bride were the one writing, and nothing needs to be changed if that happens.
+ * The Cebuano has no gender agreement and has not been checked by a native
+ * speaker.
  */
 export const NOTE_PLACEHOLDER: Record<Language, string> = {
   en: "I tell you things before I've told anyone else. I don't plan to stop.",
-  ru: 'Я говорю тебе то, что ещё никому не говорил. И не собираюсь прекращать.',
+  ru: 'Есть вещи, которыми я делюсь только с тобой. И так будет всегда.',
   ceb: 'Ikaw ang una nakong sultian sa mga butang. Wala koy plano nga moundang.',
 };
 
