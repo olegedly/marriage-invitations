@@ -64,6 +64,7 @@ export const COUNTRY_ZONES: readonly CuratedZone[] = [
   { code: 'NL', name: 'Netherlands', zone: 'Europe/Amsterdam', label: { en: 'Netherlands time', ru: 'время Нидерландов', ceb: 'oras sa Netherlands' }, shortlist: true },
   { code: 'PL', name: 'Poland', zone: 'Europe/Warsaw', label: { en: 'Poland time', ru: 'время Польши', ceb: 'oras sa Poland' }, shortlist: true },
   { code: 'GE', name: 'Georgia', zone: 'Asia/Tbilisi', label: { en: 'Georgia time', ru: 'время Грузии', ceb: 'oras sa Georgia' }, shortlist: true },
+  { code: 'BE', name: 'Belgium', zone: 'Europe/Brussels', label: { en: 'Belgium time', ru: 'время Бельгии', ceb: 'oras sa Belgium' }, shortlist: true },
 
   // Multi-zone countries your guests are likely to be in. Each entry states its
   // assumption, so the guest can see which zone was chosen.

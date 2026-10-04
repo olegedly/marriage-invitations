@@ -108,4 +108,19 @@ describe('country registry', () => {
     expect(ru?.label.ru).toBe('время Грузии');
     expect(ru?.label.ceb).toBe('oras sa Georgia');
   });
+
+  test('pins Belgium to the shortlist, labelled in every guest language', () => {
+    const belgium = allCountries().find((c) => c.code === 'BE');
+
+    expect(belgium).toMatchObject({
+      name: 'Belgium',
+      zone: 'Europe/Brussels',
+      shortlist: true,
+    });
+    expect(belgium?.label).toEqual({
+      en: 'Belgium time',
+      ru: 'время Бельгии',
+      ceb: 'oras sa Belgium',
+    });
+  });
 });
