@@ -4,6 +4,8 @@ import { Preview } from '../components/Preview.js';
 import { generateInvitation, previewInvitation } from '../api.js';
 import {
   LANGUAGE_LABELS,
+  NOTE_LIMIT,
+  NOTE_PLACEHOLDER,
   type CountryZone,
   type Gender,
   type GenerationRequest,
@@ -58,7 +60,11 @@ export function Generate(props: {
   const [previewError, setPreviewError] = createSignal<string | null>(null);
   const [previewing, setPreviewing] = createSignal(false);
 
-  const NOTE_LIMIT = 400;
+  // The limit is shared with the API rather than repeated here, so the counter,
+  // the textarea and the server cannot disagree about the ceiling. Guaranteed
+  // per keystroke by maxlength on the textarea; the submit gate below covers a
+  // note that arrived longer than the limit, which is how a history entry
+  // written before the limit existed comes back.
   const noteLength = createMemo(() => personalNote().trim().length);
   const noteTooLong = createMemo(() => noteLength() > NOTE_LIMIT);
 
@@ -296,7 +302,8 @@ export function Generate(props: {
         <textarea
           rows={3}
           value={personalNote()}
-          placeholder="e.g. We can't wait to celebrate with you!"
+          maxlength={NOTE_LIMIT}
+          placeholder={NOTE_PLACEHOLDER[language()]}
           onInput={(e) => setPersonalNote(e.currentTarget.value)}
         />
         <span class={{ counter: true, over: noteTooLong() }}>

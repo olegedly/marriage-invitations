@@ -42,6 +42,16 @@ const NUMBERS = new Set(['singular', 'plural']);
 const GENDERS = new Set(['masculine', 'feminine', 'neutral']);
 const PHOTO_SHAPES = new Set<PhotoShape>(['arched', 'rectangular']);
 
+/**
+ * Longest personal note accepted, matching the form's own limit.
+ *
+ * The two were 600 here and 400 in the form, so a caller that did not go
+ * through the form could store a note the form then refused to load back for
+ * editing. The server is still the authority — the form's maxlength is a
+ * courtesy that stops typing, not a guarantee.
+ */
+const NOTE_LIMIT = 400;
+
 interface ValidationOk {
   readonly ok: true;
   readonly value: GenerationInput;
@@ -86,7 +96,7 @@ function validate(body: unknown): ValidationOk | ValidationErr {
     if (typeof b.personalNote !== 'string') {
       return { ok: false, message: 'Personal note must be text' };
     }
-    if (b.personalNote.length > 600) {
+    if (b.personalNote.length > NOTE_LIMIT) {
       return { ok: false, message: 'Personal note is too long' };
     }
     personalNote = b.personalNote;

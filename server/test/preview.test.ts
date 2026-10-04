@@ -139,4 +139,32 @@ describe('POST /api/preview', () => {
 
     expect(res.json().markdown).toContain('So glad you can make it!');
   });
+
+  /**
+   * The limit is the form's, not a second one of the server's. A note the form
+   * accepts must be storable, or an entry it produced cannot be loaded back for
+   * editing — which is exactly what 600 here against 400 in the form caused.
+   */
+  describe('the personal note limit', () => {
+    test('accepts a note of exactly the limit', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/preview',
+        payload: validBody({ personalNote: 'a'.repeat(400) }),
+      });
+
+      expect(res.statusCode).toBe(200);
+    });
+
+    test('rejects a note one character over the limit', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/preview',
+        payload: validBody({ personalNote: 'a'.repeat(401) }),
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toMatch(/too long/i);
+    });
+  });
 });

@@ -64,3 +64,37 @@ export const LANGUAGE_LABELS: Record<Language, string> = {
   ru: 'Русский (Russian)',
   ceb: 'Bisaya (Cebuano)',
 };
+
+/**
+ * Sample personal note, per language.
+ *
+ * The one placeholder in the form that becomes copy the guest reads: everything
+ * else describes a choosing act, which is the same to read whatever language
+ * the invitation is in. So it follows the language selector, and an operator
+ * writing a Russian card is shown a Russian example rather than being nudged
+ * into pasting an English sentence into it.
+ *
+ * Each is written in one person's voice, because the note is usually added by
+ * whichever half of the couple decided to extend that invitation, and states a
+ * fact about what that person does rather than a compliment or a thank-you. The
+ * guest is left to conclude the rest; copy that says "this was written for you"
+ * would defeat itself.
+ *
+ * The Russian is the groom's voice, so its past tense is masculine — that is
+ * the speaker's gender, not the guest's. The Cebuano has no gender agreement
+ * and has not been checked by a native speaker.
+ */
+export const NOTE_PLACEHOLDER: Record<Language, string> = {
+  en: "I tell you things before I've told anyone else. I don't plan to stop.",
+  ru: 'Я говорю тебе то, что ещё никому не говорил. И не собираюсь прекращать.',
+  ceb: 'Ikaw ang una nakong sultian sa mga butang. Wala koy plano nga moundang.',
+};
+
+/**
+ * Longest personal note the form and the API both accept.
+ *
+ * One value, declared where both sides can reach it. It used to be 400 in the
+ * form and 600 in the API, so a script could store a note the form then refused
+ * to load back for editing.
+ */
+export const NOTE_LIMIT = 400;
