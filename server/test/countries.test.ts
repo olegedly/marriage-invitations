@@ -86,4 +86,26 @@ describe('country registry', () => {
     expect(lastShortlist).toBeGreaterThanOrEqual(0);
     expect(lastShortlist).toBeLessThan(firstOther);
   });
+
+  test('pins Georgia to the shortlist rather than leaving it in the alphabetical rest', () => {
+    // Georgia was reachable through the ISO fallback, but only by scrolling:
+    // it had no curated entry, so it carried no label of its own.
+    const georgia = allCountries().find((c) => c.code === 'GE');
+
+    expect(georgia).toMatchObject({
+      name: 'Georgia',
+      zone: 'Asia/Tbilisi',
+      shortlist: true,
+    });
+    expect(georgia?.label.en).toBe('Georgia time');
+    expect(georgia?.label.ru).toBe('время Грузии');
+  });
+
+  test('names Georgia in the guest language on the invitation, not just the picker', () => {
+    // The label is what the time line prints, so a curated entry with an English
+    // label would leak English into a Russian or Bisaya invitation.
+    const ru = zoneForCountry('GE');
+    expect(ru?.label.ru).toBe('время Грузии');
+    expect(ru?.label.ceb).toBe('oras sa Georgia');
+  });
 });

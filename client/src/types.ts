@@ -80,14 +80,18 @@ export const LANGUAGE_LABELS: Record<Language, string> = {
  * guest is left to conclude the rest; copy that says "this was written for you"
  * would defeat itself.
  *
- * The Russian is the groom's voice. Its new version has no gendered form at
- * all — the first person is left out entirely — so it would stay correct if the
- * bride were the one writing, and nothing needs to be changed if that happens.
- * The Cebuano has no gender agreement and has not been checked by a native
- * speaker.
+ * The English alone is prefixed "e.g." — it is the one that reads as sample
+ * prose to an English-speaking operator, and it is the one whose wording is a
+ * plain sentence that could otherwise be mistaken for the couple's own voice
+ * already filled in. The other two stand as the note itself.
+ *
+ * The Russian is the groom's voice. It has no gendered form at all — the first
+ * person is present in "я делюсь", but nothing agrees with the speaker's gender
+ * — so it would stay correct if the bride were the one writing. The Cebuano has
+ * no gender agreement either, and has not been checked by a native speaker.
  */
 export const NOTE_PLACEHOLDER: Record<Language, string> = {
-  en: "I tell you things before I've told anyone else. I don't plan to stop.",
+  en: "e.g. I tell you things before I've told anyone else. I don't plan to stop.",
   ru: 'Есть вещи, которыми я делюсь только с тобой. И так будет всегда.',
   ceb: 'Ikaw ang una nakong sultian sa mga butang. Wala koy plano nga moundang.',
 };

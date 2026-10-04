@@ -31,6 +31,14 @@ describe('the personal note placeholder', () => {
     }
   });
 
+  test('marks the English one as an example, and leaves the others as prose', () => {
+    // The English sample is a plain sentence in the couple's voice, so without
+    // the marker it reads as text already written rather than as a suggestion.
+    expect(NOTE_PLACEHOLDER.en).toMatch(/^e\.g\. /);
+    expect(NOTE_PLACEHOLDER.ru).not.toMatch(/^e\.g\. /);
+    expect(NOTE_PLACEHOLDER.ceb).not.toMatch(/^e\.g\. /);
+  });
+
   test('speaks in one person voice, since one half of the couple adds it', () => {
     // "We" would read as a note from the couple jointly; the common case is
     // that whoever extended this particular invitation writes it alone.
