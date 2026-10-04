@@ -7,9 +7,8 @@ Enter a guest name, pick a language and a tone, choose the guest's country, add
 an optional personal line — and download a PDF ready to send. The invitation's
 text updates in a live preview as you fill the form, so the wording can be read
 before anything is generated. Every generation is kept in a history you can
-revisit and re-download. Each entry can be downloaded two ways: exactly as it
-was first generated, or re-rendered from the same guest choices with the
-wedding details in force now.
+revisit: an entry can be read as text, built into a PDF again, or loaded back
+into the form to amend for another guest.
 
 Oleg & Rose — 13 October 2026, 18:10 EEST (Oleg's time, Romania), online.
 Rose is in the Philippines, which is why the ceremony is online.
@@ -27,12 +26,13 @@ Fastify server
    │  renderInvitation()  → markdown        (pure, timezone-aware)
    │  md-to-pdf          → HTML → Chromium → PDF
    ▼
-PDF bytes → download, and a record saved to SQLite history
+PDF bytes → download, and the guest's choices saved to SQLite history
 ```
 
-The markdown is the record of what was said; the PDF is what it looks like. The
-stylesheet at `server/src/templates/invitation.css` is used only for generation
-and is not shared with the UI.
+The markdown is one rendering of what was said; the PDF is what it looks like.
+Neither is stored: history keeps the guest's choices, and both are rebuilt from
+them. The stylesheet at `server/src/templates/invitation.css` is used only for
+generation and is not shared with the UI.
 
 ## The two pages
 
@@ -51,9 +51,9 @@ markdown document holding exactly two sections:
   opens straight on the greeting: the cover already carries the title and the
   names, so neither is repeated here.
 
-Both sections are part of the stored markdown, so *Original* re-downloads
-reproduce the cover as it was generated rather than rebuilding it from today's
-constants.
+Both sections are produced by the same `renderInvitation()` call, so a
+re-download reproduces the cover from the choices on the record — including the
+frame shape it was sent with — rather than from a stored copy of the markdown.
 
 ### The photograph's frame
 
@@ -67,9 +67,7 @@ shapes are two rules keyed on a class the cover emits, `.cover--arched` and
 Because it says nothing, it is also the only field the API will supply for
 itself when a request omits it (defaulting to the rectangle). Every other field
 would be putting words in the guest's mouth. There is `DEFAULT_PHOTO_SHAPE` in
-`server/src/cover.ts`, and the column default for a new database follows it. A
-history written before the option existed is the exception: it reads as the arch
-it was made with, not as today's default.
+`server/src/cover.ts`, and the column default for a new database follows it.
 
 The page breaks and the copy live in the markdown; only the appearance lives in
 the stylesheet. Page two's copy is one flex column centred in the frame, so a
@@ -126,32 +124,49 @@ six values in its own `:root` and derives its roles from them, and the favicon's
 badge and rings use the gold-deep and the paper. Re-sampling the frame means
 updating both `:root` blocks, not just the template.
 
-## History and re-downloads
+## History
 
 Every generation is saved, and each entry offers three actions:
 
-- **Original** (`GET /api/history/:id/pdf`) serves the markdown exactly as it
-  was first generated. It is the record of what the guest received, so it keeps
-  the links and wording of that moment even after the app is redeployed.
-- **Updated** (`GET /api/history/:id/pdf/current`) rebuilds the invitation from
-  the stored guest choices — name, language, address form, country, note, frame
-  shape —
-  using the constants in `server/src/event.ts` as they are now. A corrected
-  Zoom link, a changed Facebook URL or a moved date reaches the guest on a
-  re-download. The calendar call to action is a constant too, so repointing
-  `calendarLink` at a different event reaches a past guest on a re-download.
-- **Reuse** opens the generation form with that entry's choices already filled
-  in, for a near-identical guest. Generating saves a new record; the original
-  is left as it was. The prefill is consumed by the form and is not re-applied
-  on a later visit, so a blank form stays blank.
+- **Preview** renders the invitation's text from the entry's stored choices and
+  shows it inline, using the same server call — and so the same copy — as the
+  generation form's preview. Nothing stored is read back to do it.
+- **Download** (`GET /api/history/:id/pdf`) builds the PDF from the stored guest
+  choices — name, language, address form, country, note, frame shape — using the
+  constants in `server/src/event.ts` as they are now. A corrected Zoom link, a
+  changed Facebook URL or a moved date reaches the guest on a re-download. The
+  calendar call to action is a constant too, so repointing `calendarLink` at a
+  different event reaches a past guest on a re-download.
+- **Amend** opens the generation form with that entry's choices already filled
+  in, for a near-identical guest. Generating saves a new record and leaves the
+  entry it came from untouched. The prefill is consumed by the form and is not
+  re-applied on a later visit, so a blank form stays blank.
 
-That is why history stores the generation **input**, not only the rendered
-text: the input is the source of truth and the markdown is one rendering of it.
-No action rewrites the stored record, so the original stays available even
-after the updated one has been fetched.
+History stores the generation **input** and nothing else. The input is the
+source of truth; the markdown and the PDF are renderings of it, and keeping
+either would freeze the wording and the links of the day it was made — then
+every route would have to say which rendering it meant. There is no "original"
+download for that reason, and no stored markdown for the preview to read.
 
-The downloads answer different questions. "What exactly did we send?" is the
-original. "What would we send today?" is the updated one.
+### There is one schema, and no migrations
+
+`server/src/history.ts` holds the only schema this code can read or write. On
+open, the file is compared against it — structurally, through SQLite's own
+table and index metadata — and **if it does not match exactly, the file and its
+write-ahead log are deleted and a fresh database is created**. A reset is
+reported through the app logger at boot.
+
+So changing the schema is the migration: the old file is the wrong shape and is
+discarded rather than upgraded. This is a deliberate trade. History is a
+convenience, and a migration is a second schema to keep correct for as long as
+the file survives — which, on a mounted volume, is forever. The cost is that
+**a schema change discards all existing history**, including on a deployed
+volume; that is the intended behaviour, not an accident.
+
+This is also what retires the obsolete markdown of earlier formats. Dropping the
+`markdown` column made every existing file a mismatch, so the first boot under
+this schema discarded those rows before any code could try to render them, and
+the template no longer carries a rule for the blockquote a note used to be.
 
 ## The text preview
 
@@ -372,7 +387,8 @@ npm test
 - Text preview — same API surface, but built with **no PDF renderer injected**,
   so a preview that reached for a browser would fail the test
 - PDF adapter — Puppeteer is injected, so only one test launches a browser
-- History — real SQLite file per test, never mocked
+- History — real SQLite file per test, never mocked, including the reset of a
+  file whose schema is not the current one
 - Client `filenameFrom` — the `Content-Disposition` contract with the server,
   parsed from a header the server really builds, so a Cyrillic guest name cannot
   silently fall back to an ASCII stand-in on its way to the downloads folder
@@ -397,7 +413,9 @@ The image is multi-stage: a build stage compiles the client and server, and a
 runtime stage carries only production dependencies, Chromium and fonts.
 
 - **History** is stored at `/data/history.sqlite` — mount a volume to keep it
-  across redeploys.
+  across redeploys. A redeploy that changes the schema replaces that file rather
+  than migrating it (see "There is one schema, and no migrations"), so the
+  volume is what makes history survive anything else.
 - **Fonts** are installed explicitly. Without them, Cyrillic guest names render
   as boxes in the PDF. The cover's script faces are the exception: they are
   served from `templates/fonts/` with the stylesheet, so they need no package.
@@ -472,7 +490,7 @@ server/
     cover.ts          ← the cover page, authored as HTML
     calendar.ts       ← the .ics artifact (fallback for non-Gmail guests)
     pdf.ts            ← md-to-pdf adapter (injectable)
-    history.ts        ← SQLite history
+    history.ts        ← SQLite history: one schema, replaced when it does not match
     app.ts            ← Fastify routes
     templates/
       invitation.css  ← the one shared template stylesheet

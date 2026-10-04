@@ -10,8 +10,20 @@ const DB_PATH = process.env.DATABASE_PATH ?? 'data/history.sqlite';
 
 mkdirSync(dirname(DB_PATH), { recursive: true });
 
-const history = openHistory(DB_PATH);
+/*
+ * A database that is not the current schema is replaced on open (see
+ * history.ts). That is intended but destructive, so it is reported through the
+ * app's own logger rather than happening silently. The reason is collected here
+ * because the app that owns that logger does not exist while the store is being
+ * opened.
+ */
+const resets: string[] = [];
+const history = openHistory(DB_PATH, { onReset: (reason) => resets.push(reason) });
 const app = await buildApp({ history });
+
+for (const reason of resets) {
+  app.log.warn(`history: ${reason}`);
+}
 
 const close = async (signal: string) => {
   app.log.info(`${signal} received, shutting down`);

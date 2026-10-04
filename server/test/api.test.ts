@@ -214,31 +214,13 @@ describe('GET /api/history', () => {
   });
 });
 
-describe('GET /api/history/:id', () => {
-  test('returns the stored markdown for a past generation', async () => {
+describe('GET /api/history/:id/pdf', () => {
+  test('re-renders a past invitation from its stored choices', async () => {
     await app.inject({
       method: 'POST',
       url: '/api/generate',
-      payload: validBody({ personalNote: 'See you there!' }),
+      payload: validBody({ personalNote: 'Still counts!' }),
     });
-    const [entry] = (await app.inject({ method: 'GET', url: '/api/history' })).json();
-
-    const res = await app.inject({ method: 'GET', url: `/api/history/${entry.id}` });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.json().markdown).toContain('See you there!');
-  });
-
-  test('404s for an unknown id', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/history/nope' });
-
-    expect(res.statusCode).toBe(404);
-  });
-});
-
-describe('GET /api/history/:id/pdf', () => {
-  test('re-renders a stored invitation as a PDF', async () => {
-    await app.inject({ method: 'POST', url: '/api/generate', payload: validBody() });
     const [entry] = (await app.inject({ method: 'GET', url: '/api/history' })).json();
 
     const res = await app.inject({
@@ -252,35 +234,9 @@ describe('GET /api/history/:id/pdf', () => {
   });
 
   test('404s for an unknown id', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/history/nope/pdf' });
-
-    expect(res.statusCode).toBe(404);
-  });
-});
-
-describe('GET /api/history/:id/pdf/current', () => {
-  test('re-renders a past invitation from its stored choices', async () => {
-    await app.inject({
-      method: 'POST',
-      url: '/api/generate',
-      payload: validBody({ personalNote: 'Still counts!' }),
-    });
-    const [entry] = (await app.inject({ method: 'GET', url: '/api/history' })).json();
-
     const res = await app.inject({
       method: 'GET',
-      url: `/api/history/${entry.id}/pdf/current`,
-    });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['content-type']).toContain('application/pdf');
-    expect(res.headers['content-disposition']).toContain('Invitation_Loimie_EN.pdf');
-  });
-
-  test('404s for an unknown id', async () => {
-    const res = await app.inject({
-      method: 'GET',
-      url: '/api/history/nope/pdf/current',
+      url: '/api/history/nope/pdf',
     });
 
     expect(res.statusCode).toBe(404);
@@ -299,7 +255,7 @@ describe('GET /api/history/:id/pdf/current', () => {
 
     const res = await reread.inject({
       method: 'GET',
-      url: `/api/history/${entry.id}/pdf/current`,
+      url: `/api/history/${entry.id}/pdf`,
     });
 
     expect(res.statusCode).toBe(200);
@@ -325,7 +281,7 @@ describe('history downloads after a redeploy changes the constants', () => {
   };
 
   /** Generate one invitation under the given constants, leaving it in history. */
-  async function generateUnder(event: EventConstants): Promise<string> {
+  async function generateUnder(event: EventConstants): Promise<void> {
     const capture = capturingPdf();
     const generationApp = await buildApp({ history, renderPdf: capture.render, event });
     await generationApp.inject({
@@ -334,31 +290,10 @@ describe('history downloads after a redeploy changes the constants', () => {
       payload: validBody(),
     });
     await generationApp.close();
-    return capture.markdowns[0]!;
   }
 
-  test('the updated download reflects the constants in force now', async () => {
+  test('the download reflects the constants in force now', async () => {
     await generateUnder(before);
-
-    const capture = capturingPdf();
-    const redeployed = await buildApp({ history, renderPdf: capture.render, event: after });
-    const [entry] = (await redeployed.inject({ method: 'GET', url: '/api/history' })).json();
-
-    const res = await redeployed.inject({
-      method: 'GET',
-      url: `/api/history/${entry.id}/pdf/current`,
-    });
-
-    expect(res.statusCode).toBe(200);
-    const rendered = capture.markdowns.at(-1)!;
-    expect(rendered).toContain('https://call.example/new-room');
-    expect(rendered).toContain('https://facebook.com/new-oleg');
-    expect(rendered).not.toContain('https://call.example/old-room');
-    await redeployed.close();
-  });
-
-  test('the original download still serves exactly what was generated', async () => {
-    const generated = await generateUnder(before);
 
     const capture = capturingPdf();
     const redeployed = await buildApp({ history, renderPdf: capture.render, event: after });
@@ -370,7 +305,10 @@ describe('history downloads after a redeploy changes the constants', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(capture.markdowns.at(-1)).toBe(generated);
+    const rendered = capture.markdowns.at(-1)!;
+    expect(rendered).toContain('https://call.example/new-room');
+    expect(rendered).toContain('https://facebook.com/new-oleg');
+    expect(rendered).not.toContain('https://call.example/old-room');
     await redeployed.close();
   });
 });
@@ -441,26 +379,33 @@ describe('static client', () => {
 
 describe('the calendar call to action', () => {
   test('points at Google, so no request origin can leak into it', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/generate',
-      headers: {
-        host: 'internal-service:3000',
-        'x-forwarded-host': 'invites.example.org',
-        'x-forwarded-proto': 'https',
-      },
-      payload: validBody(),
-    });
+    const capture = capturingPdf();
+    const generating = await buildApp({ history, renderPdf: capture.render });
+    try {
+      const res = await generating.inject({
+        method: 'POST',
+        url: '/api/generate',
+        headers: {
+          host: 'internal-service:3000',
+          'x-forwarded-host': 'invites.example.org',
+          'x-forwarded-proto': 'https',
+        },
+        payload: validBody(),
+      });
 
-    expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(200);
 
-    // The stored markdown is what gets rendered into the PDF, so the link is
-    // asserted there rather than in the (faked) PDF bytes.
-    const stored = history.get(history.list()[0]!.id)!;
-    expect(stored.markdown).toContain(`](https://calendar.app.google/`);
-    // Neither the proxy host nor an .ics download link appears anywhere: the
-    // invitation holds no link back to the app it was generated on.
-    expect(stored.markdown).not.toContain('internal-service');
-    expect(stored.markdown).not.toContain('.ics');
+      // The markdown handed to the renderer is what the guest's PDF is built
+      // from, and it is no longer kept anywhere afterwards, so it is read from
+      // the render call rather than from history.
+      const rendered = capture.markdowns.at(-1)!;
+      expect(rendered).toContain(`](https://calendar.app.google/`);
+      // Neither the proxy host nor an .ics download link appears anywhere: the
+      // invitation holds no link back to the app it was generated on.
+      expect(rendered).not.toContain('internal-service');
+      expect(rendered).not.toContain('.ics');
+    } finally {
+      await generating.close();
+    }
   });
 });

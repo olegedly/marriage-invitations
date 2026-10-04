@@ -33,23 +33,7 @@ export function Preview(props: {
 
       <Show when={props.markdown}>
         <div class={['preview-body', { stale: props.loading }]}>
-          <For each={parseMarkdown(props.markdown!)}>
-            {(block) => {
-              const content = () => (
-                <For each={block.inline}>
-                  {(node) => <Inline node={node} />}
-                </For>
-              );
-
-              return (
-                <Show when={block.kind === 'heading'} fallback={
-                  <p class="preview-line">{content()}</p>
-                }>
-                  <h3 class="preview-time">{content()}</h3>
-                </Show>
-              );
-            }}
-          </For>
+          <PreviewText markdown={props.markdown!} />
         </div>
 
         <Show when={props.filename}>
@@ -59,6 +43,36 @@ export function Preview(props: {
         </Show>
       </Show>
     </aside>
+  );
+}
+
+/**
+ * The invitation's text as readable blocks.
+ *
+ * Shared by the generation preview and a history entry's Preview button, so a
+ * past invitation is read exactly as the one about to be generated: both are
+ * the same renderInvitation call on the server, and neither reads a stored copy
+ * back (see server/src/history.ts).
+ */
+export function PreviewText(props: { markdown: string }) {
+  return (
+    <For each={parseMarkdown(props.markdown)}>
+      {(block) => {
+        const content = () => (
+          <For each={block.inline}>
+            {(node) => <Inline node={node} />}
+          </For>
+        );
+
+        return (
+          <Show when={block.kind === 'heading'} fallback={
+            <p class="preview-line">{content()}</p>
+          }>
+            <h3 class="preview-time">{content()}</h3>
+          </Show>
+        );
+      }}
+    </For>
   );
 }
 

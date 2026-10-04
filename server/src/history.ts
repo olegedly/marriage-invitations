@@ -1,12 +1,20 @@
 /**
  * Seam T4: generation history, backed by SQLite.
  *
- * Deliberately small surface — save, list, get, close. The stored markdown is
- * the source of truth for a past invitation, so history keeps working even if
- * templates are edited later.
+ * Deliberately small surface — save, list, get, close. A record holds the guest
+ * choices an invitation was generated from, and nothing else. The markdown and
+ * the PDF are both renderings of those choices: storing one would freeze the
+ * wording and the links of the day it was made, and every route would then have
+ * to say which of the two renderings it means.
+ *
+ * The schema below is the only shape this code knows. There are no migrations
+ * and no compatibility reads: a file that does not match it exactly is replaced
+ * on open (see openHistory), so this version never has an old database to
+ * render the wrong thing from.
  */
 
 import Database from 'better-sqlite3';
+import { existsSync, rmSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import type { GenerationInput, Gender, NumberForm, Register } from './render.js';
 import type { Language } from './event.js';
@@ -24,12 +32,10 @@ export interface HistoryEntry {
   readonly personalNote: string | null;
   readonly photoShape: PhotoShape;
   readonly filename: string;
-  readonly markdown: string;
 }
 
 export interface SaveInput {
   readonly input: GenerationInput;
-  readonly markdown: string;
   readonly filename: string;
 }
 
@@ -50,20 +56,9 @@ interface Row {
   gender: string;
   country_code: string;
   personal_note: string | null;
-  photo_shape: string | null;
+  photo_shape: string;
   filename: string;
-  markdown: string;
 }
-
-/**
- * The frame of a row written before the shape was a choice.
- *
- * Those invitations went out under the arch, so an old history file reads as
- * arched. That is a fact about the record, not today's default, and
- * `DEFAULT_PHOTO_SHAPE` must not be substituted for it — a re-download of a
- * sent invitation would then quietly change its cover.
- */
-const PRE_OPTION_PHOTO_SHAPE: PhotoShape = 'arched';
 
 function toEntry(row: Row): HistoryEntry {
   return {
@@ -76,23 +71,51 @@ function toEntry(row: Row): HistoryEntry {
     gender: row.gender as Gender,
     countryCode: row.country_code,
     personalNote: row.personal_note,
-    // A row written before the frame shape was an option reads as the arch,
-    // which is what it was generated with (see PRE_OPTION_PHOTO_SHAPE). The
-    // migration's backfill covers those rows; this covers one that is somehow
-    // null.
-    photoShape: (row.photo_shape as PhotoShape | null) ?? PRE_OPTION_PHOTO_SHAPE,
+    photoShape: row.photo_shape as PhotoShape,
     filename: row.filename,
-    markdown: row.markdown,
   };
 }
 
 /**
+ * The one schema, and the only one this code can read or write.
+ *
+ * Every open compares the file against this and replaces the file when it
+ * differs (see openHistory), so changing anything here is also the migration:
+ * the old file is the wrong shape and is discarded rather than upgraded. That
+ * is a deliberate trade. This history is a convenience, and a migration is a
+ * second schema to keep correct for as long as the file survives — which, on a
+ * mounted volume, is forever.
+ *
+ * `IF NOT EXISTS` is not what guarantees the shape; the check in openHistory
+ * is. The clause is only there so that opening a file that already matches
+ * leaves it alone.
+ */
+const SCHEMA = `
+  CREATE TABLE IF NOT EXISTS generations (
+    id            TEXT PRIMARY KEY,
+    created_at    TEXT NOT NULL,
+    guests        TEXT NOT NULL,
+    language      TEXT NOT NULL,
+    number        TEXT NOT NULL,
+    register      TEXT NOT NULL,
+    gender        TEXT NOT NULL,
+    country_code  TEXT NOT NULL,
+    personal_note TEXT,
+    photo_shape   TEXT NOT NULL DEFAULT '${DEFAULT_PHOTO_SHAPE}',
+    filename      TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS generations_created_at
+    ON generations (created_at DESC);
+`;
+
+/**
  * Rebuild the guest-specific input a past entry was generated from.
  *
- * The stored markdown is only a rendering of this input under the constants and
- * template in force at the time. Keeping the input itself is what lets the same
- * invitation be rendered again with today's values (see GET
- * /api/history/:id/pdf/current) while the original stays untouched.
+ * The choices are the record. Every rendering of a past invitation — the PDF
+ * and the text preview alike — is rebuilt from them, so it reflects the
+ * constants and the template in force now rather than those of the day it was
+ * generated.
  */
 export function generationInputOf(entry: HistoryEntry): GenerationInput {
   return {
@@ -107,55 +130,106 @@ export function generationInputOf(entry: HistoryEntry): GenerationInput {
   };
 }
 
-export function openHistory(path: string): History {
-  const db = new Database(path);
-  db.pragma('journal_mode = WAL');
+/**
+ * A database's shape, as one string for an exact comparison.
+ *
+ * Compared structurally rather than by the CREATE statements SQLite keeps: a
+ * statement is stored as it was written, and rewritten when SQLite backfills a
+ * new column into it, so comparing that text would read a reformatted schema as
+ * a different one — and wipe a live history over a change of whitespace.
+ */
+function shapeOf(db: Database.Database): string {
+  const tables = db
+    .prepare(
+      `SELECT name FROM sqlite_master
+        WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name`,
+    )
+    .all() as { name: string }[];
 
-  /*
-   * The column default follows the live default (`DEFAULT_PHOTO_SHAPE`): the
-   * store always writes the shape explicitly, so it only stands in for an
-   * insert that somehow omits it — and then today's frame is what it should be.
-   */
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS generations (
-      id            TEXT PRIMARY KEY,
-      created_at    TEXT NOT NULL,
-      guests        TEXT NOT NULL,
-      language      TEXT NOT NULL,
-      number        TEXT NOT NULL,
-      register      TEXT NOT NULL,
-      gender        TEXT NOT NULL,
-      country_code  TEXT NOT NULL,
-      personal_note TEXT,
-      photo_shape   TEXT NOT NULL DEFAULT '${DEFAULT_PHOTO_SHAPE}',
-      filename      TEXT NOT NULL,
-      markdown      TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS generations_created_at
-      ON generations (created_at DESC);
-  `);
+  return JSON.stringify(
+    tables.map(({ name }) => ({
+      name,
+      columns: db.prepare(`PRAGMA table_info("${name}")`).all(),
+      indexes: (
+        db.prepare(`PRAGMA index_list("${name}")`).all() as {
+          name: string;
+          unique: number;
+        }[]
+      )
+        .map((index) => ({
+          name: index.name,
+          unique: index.unique,
+          columns: db.prepare(`PRAGMA index_info("${index.name}")`).all(),
+        }))
+        // index_list is in creation order, which is not part of the shape.
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    })),
+  );
+}
 
-  /*
-   * A database created before the frame shape was an option has no column for
-   * it. CREATE TABLE IF NOT EXISTS will not add one to a table that already
-   * exists, so an older history would fail every insert without this. Unlike
-   * the schema above, this default IS read: SQLite backfills every existing row
-   * with it, and those rows were generated with the arch.
-   */
-  const columns = db.prepare(`PRAGMA table_info(generations)`).all() as { name: string }[];
-  if (!columns.some((column) => column.name === 'photo_shape')) {
-    db.exec(
-      `ALTER TABLE generations ADD COLUMN photo_shape TEXT NOT NULL DEFAULT '${PRE_OPTION_PHOTO_SHAPE}'`,
-    );
+/**
+ * Whether a file is the schema above and nothing else.
+ *
+ * Built by applying SCHEMA to a throwaway in-memory database and comparing the
+ * two shapes, so the schema has one definition rather than a second, parallel
+ * description of what it is expected to contain.
+ *
+ * A file with no schema at all — empty, or truncated by a crash — is not a
+ * match either, so it takes the same path as a stale one.
+ */
+function matchesCurrentSchema(db: Database.Database): boolean {
+  const reference = new Database(':memory:');
+  try {
+    reference.exec(SCHEMA);
+    return shapeOf(db) === shapeOf(reference);
+  } finally {
+    reference.close();
   }
+}
+
+/**
+ * Delete the database and the write-ahead log beside it.
+ *
+ * The `-wal` file is not litter to leave behind: SQLite replays it into whatever
+ * database is at the path, which would put back the rows this is discarding.
+ */
+function discard(path: string): void {
+  for (const suffix of ['', '-wal', '-shm']) {
+    rmSync(`${path}${suffix}`, { force: true });
+  }
+}
+
+export interface OpenHistoryOptions {
+  /**
+   * Called with a line fit for a startup log when a database was not the
+   * current schema and had to be replaced. Discarding a history is not
+   * something to do silently.
+   */
+  readonly onReset?: (reason: string) => void;
+}
+
+export function openHistory(path: string, options: OpenHistoryOptions = {}): History {
+  const existed = existsSync(path);
+  let db = new Database(path);
+
+  if (existed && !matchesCurrentSchema(db)) {
+    db.close();
+    discard(path);
+    options.onReset?.(`${path} is not the current schema and has been replaced`);
+    db = new Database(path);
+  }
+
+  db.pragma('journal_mode = WAL');
+  db.exec(SCHEMA);
 
   const insert = db.prepare(`
     INSERT INTO generations
       (id, created_at, guests, language, number, register, gender,
-       country_code, personal_note, photo_shape, filename, markdown)
+       country_code, personal_note, photo_shape, filename)
     VALUES
       (@id, @created_at, @guests, @language, @number, @register, @gender,
-       @country_code, @personal_note, @photo_shape, @filename, @markdown)
+       @country_code, @personal_note, @photo_shape, @filename)
   `);
 
   const selectAll = db.prepare(
@@ -164,7 +238,7 @@ export function openHistory(path: string): History {
   const selectOne = db.prepare(`SELECT * FROM generations WHERE id = ?`);
 
   return {
-    save({ input, markdown, filename }) {
+    save({ input, filename }) {
       const entry: HistoryEntry = {
         id: randomUUID(),
         createdAt: new Date().toISOString(),
@@ -177,7 +251,6 @@ export function openHistory(path: string): History {
         personalNote: input.personalNote,
         photoShape: input.photoShape,
         filename,
-        markdown,
       };
 
       insert.run({
@@ -192,7 +265,6 @@ export function openHistory(path: string): History {
         personal_note: entry.personalNote,
         photo_shape: entry.photoShape,
         filename: entry.filename,
-        markdown: entry.markdown,
       });
 
       return entry;

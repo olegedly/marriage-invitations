@@ -51,9 +51,9 @@
   --copy-small: 9pt;
 
   /*
-   * The rhythm between the blocks of the copy column. Named because the
-   * paragraphs of a stored note stand in for blocks of their own and have to be
-   * spaced by the same gap (see "Personal note" below).
+   * The rhythm between the blocks of the copy column. Named because each
+   * paragraph of the personal note is a block of its own and has to be spaced
+   * like any other (see "Personal note" below).
    */
   --copy-gap: 4mm;
 }
@@ -372,43 +372,14 @@ body > section.details {
 /* ---------- Personal note ---------- */
 
 /*
- * A note drawn from the form is already an ordinary paragraph (see render.ts),
- * so it needs no rule of its own: the copy above gives it the intro's size and
- * leading, and the column's gap spaces it from its neighbours.
- *
- * Markdown stored before the note became ordinary copy still carries it as a
- * blockquote. History keeps the markdown an invitation was generated with, and
- * GET /api/history/:id/pdf serves that markdown under this stylesheet, so the
- * blockquote is flattened to the same plain copy rather than keeping a
- * distinction a freshly generated invitation no longer has. Every property the
- * old rule set gave it is reset explicitly, so its box cannot reappear.
+ * A note is already an ordinary paragraph (see render.ts), so it needs no rule
+ * of its own: the copy above gives it the intro's size and leading, and the
+ * column's gap spaces it from its neighbours. A note of several paragraphs is
+ * several such paragraphs, so that same gap spaces those too. There is no
+ * wrapper element, no blockquote and nothing to flatten: history keeps the
+ * guest's choices, never the markdown they were rendered into (see
+ * history.ts), so no invitation on this page was ever written as a quote.
  */
-.details blockquote {
-  max-width: var(--measure);
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-style: normal;
-  font-size: var(--copy-small);
-  line-height: 1.45;
-  color: inherit;
-}
-
-/*
- * The paragraphs of a stored note stand in for blocks of the column, so they
- * are spaced by the column's own gap. The last one keeps no margin of its own:
- * the gap that follows belongs to the next block.
- */
-.details blockquote p {
-  margin: 0;
-  orphans: 2;
-  widows: 2;
-}
-
-.details blockquote p + p {
-  margin-top: var(--copy-gap);
-}
 
 /* ---------- Date, time and calls to action ---------- */
 
@@ -483,9 +454,7 @@ body > section.details {
 
 /*
  * The time heading rules the copy off from the detail below it, so it must not
- * be the last thing on a page. A note is ordinary copy now and may break like
- * any other paragraph, so blockquotes are not held together here: a long stored
- * note would otherwise jump to a fresh sheet where a note generated today flows.
+ * be the last thing on a page.
  */
 h2 {
   break-inside: avoid;

@@ -3,7 +3,6 @@
 import type {
   CountryZone,
   GenerationRequest,
-  HistoryDetail,
   HistoryEntry,
   PreviewResult,
 } from './types.js';
@@ -22,10 +21,6 @@ export async function fetchCountries(): Promise<CountryZone[]> {
 
 export async function fetchHistory(): Promise<HistoryEntry[]> {
   return json<HistoryEntry[]>(await fetch('/api/history'));
-}
-
-export async function fetchHistoryEntry(id: string): Promise<HistoryDetail> {
-  return json<HistoryDetail>(await fetch(`/api/history/${encodeURIComponent(id)}`));
 }
 
 /**
@@ -108,27 +103,15 @@ function decodeExtended(value: string): string {
   }
 }
 
-/** Which rendering of a past invitation to fetch. */
-export type HistoryPdfVariant = 'original' | 'current';
-
 /**
- * Re-download a past invitation.
+ * Build a past invitation again and hand the PDF to the browser.
  *
- * `original` serves the invitation exactly as it was first generated, so the
- * record of what was sent stays intact. `current` re-renders it from the same
- * stored guest choices using the wedding details in force now, so a link or
- * date corrected since then reaches the guest on a re-download.
+ * Only the guest's choices are kept, so this always renders the invitation from
+ * them using the wedding details in force now: a corrected Zoom link or a moved
+ * date reaches the guest on a re-download.
  */
-export async function downloadHistoryPdf(
-  id: string,
-  variant: HistoryPdfVariant = 'original',
-): Promise<void> {
-  const path =
-    variant === 'current'
-      ? `/api/history/${encodeURIComponent(id)}/pdf/current`
-      : `/api/history/${encodeURIComponent(id)}/pdf`;
-
-  const res = await fetch(path);
+export async function downloadHistoryPdf(id: string): Promise<void> {
+  const res = await fetch(`/api/history/${encodeURIComponent(id)}/pdf`);
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
   const blob = await res.blob();

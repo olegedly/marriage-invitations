@@ -1,11 +1,7 @@
 import { createMemo, createSignal, For, Show } from 'solid-js';
-import {
-  downloadHistoryPdf,
-  fetchHistory,
-  fetchHistoryEntry,
-  type HistoryPdfVariant,
-} from '../api.js';
-import { LANGUAGE_LABELS, type GenerationRequest, type HistoryDetail, type HistoryEntry } from '../types.js';
+import { downloadHistoryPdf, fetchHistory, previewInvitation } from '../api.js';
+import { PreviewText } from '../components/Preview.js';
+import { LANGUAGE_LABELS, type GenerationRequest, type HistoryEntry } from '../types.js';
 
 const GENDER_LABELS: Record<string, string> = {
   masculine: 'masc.',
@@ -13,11 +9,30 @@ const GENDER_LABELS: Record<string, string> = {
   neutral: '',
 };
 
-export function History(props: { onReuse: (request: GenerationRequest) => void }) {
+/**
+ * The choices an entry was generated with, as the API takes them.
+ *
+ * Built field by field rather than spread: the entry also carries its id, its
+ * timestamp and its filename, none of which are part of a generation request.
+ */
+function requestOf(entry: HistoryEntry): GenerationRequest {
+  return {
+    guests: entry.guests,
+    language: entry.language,
+    number: entry.number,
+    register: entry.register,
+    gender: entry.gender,
+    countryCode: entry.countryCode,
+    personalNote: entry.personalNote,
+    photoShape: entry.photoShape,
+  };
+}
+
+export function History(props: { onAmend: (request: GenerationRequest) => void }) {
   const [entries, setEntries] = createSignal<HistoryEntry[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
-  const [expanded, setExpanded] = createSignal<HistoryDetail | null>(null);
+  const [expanded, setExpanded] = createSignal<{ id: string; markdown: string } | null>(null);
   const [busy, setBusy] = createSignal<string | null>(null);
 
   async function load() {
@@ -34,23 +49,35 @@ export function History(props: { onReuse: (request: GenerationRequest) => void }
 
   void load();
 
-  async function toggle(id: string) {
-    if (expanded()?.id === id) {
+  /**
+   * Read the invitation's text again.
+   *
+   * There is no stored markdown to fetch — history keeps the guest's choices
+   * and nothing else — so the copy is rendered from those choices, by the same
+   * server call the generation form's preview uses.
+   */
+  async function toggle(entry: HistoryEntry) {
+    if (expanded()?.id === entry.id) {
       setExpanded(null);
       return;
     }
+    setBusy(`${entry.id}:preview`);
+    setError(null);
     try {
-      setExpanded(await fetchHistoryEntry(id));
+      const { markdown } = await previewInvitation(requestOf(entry));
+      setExpanded({ id: entry.id, markdown });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load that invitation');
+      setError(err instanceof Error ? err.message : 'Could not read that invitation');
+    } finally {
+      setBusy(null);
     }
   }
 
-  async function download(id: string, variant: HistoryPdfVariant) {
-    setBusy(`${id}:${variant}`);
+  async function download(id: string) {
+    setBusy(`${id}:download`);
     setError(null);
     try {
-      await downloadHistoryPdf(id, variant);
+      await downloadHistoryPdf(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download failed');
     } finally {
@@ -58,7 +85,7 @@ export function History(props: { onReuse: (request: GenerationRequest) => void }
     }
   }
 
-  /** One download per entry at a time, so the two buttons cannot race. */
+  /** One action per entry at a time, so the buttons cannot race. */
   const busyOn = (id: string) => busy()?.startsWith(`${id}:`) ?? false;
 
   const grouped = createMemo(() =>
@@ -87,7 +114,7 @@ export function History(props: { onReuse: (request: GenerationRequest) => void }
 
       <Show when={!loading() && entries().length === 0}>
         <p class="muted">
-          Nothing yet. Generated invitations will appear here, and can be downloaded
+          Nothing yet. Generated invitations will appear here, and can be built
           again at any time.
         </p>
       </Show>
@@ -118,41 +145,47 @@ export function History(props: { onReuse: (request: GenerationRequest) => void }
                 </div>
                 <div class="history-actions">
                   <span class="when">{entry.when}</span>
-                  <button type="button" class="ghost" onClick={() => void toggle(entry.id)}>
-                    {expanded()?.id === entry.id ? 'Hide' : 'View'}
+                  <button
+                    type="button"
+                    class="ghost"
+                    disabled={busyOn(entry.id)}
+                    onClick={() => void toggle(entry)}
+                  >
+                    {busy() === `${entry.id}:preview`
+                      ? '…'
+                      : expanded()?.id === entry.id
+                        ? 'Hide'
+                        : 'Preview'}
+                  </button>
+                  <button
+                    type="button"
+                    class="ghost"
+                    title="Build this invitation again and download it"
+                    disabled={busyOn(entry.id)}
+                    onClick={() => void download(entry.id)}
+                  >
+                    {busy() === `${entry.id}:download` ? '…' : 'Download'}
                   </button>
                   <button
                     type="button"
                     class="ghost"
                     title="Open a new invitation with these choices"
-                    onClick={() => props.onReuse(entry)}
+                    onClick={() => props.onAmend(entry)}
                   >
-                    Reuse
-                  </button>
-                  <button
-                    type="button"
-                    class="ghost"
-                    title="Exactly as it was first generated"
-                    disabled={busyOn(entry.id)}
-                    onClick={() => void download(entry.id, 'original')}
-                  >
-                    {busy() === `${entry.id}:original` ? '…' : 'Original'}
-                  </button>
-                  <button
-                    type="button"
-                    class="ghost"
-                    title="Re-rendered with the current wedding details"
-                    disabled={busyOn(entry.id)}
-                    onClick={() => void download(entry.id, 'current')}
-                  >
-                    {busy() === `${entry.id}:current` ? '…' : 'Updated'}
+                    Amend
                   </button>
                 </div>
               </div>
 
               <Show when={expanded()?.id === entry.id}>
-                <p class="muted history-caption">Text as originally generated.</p>
-                <pre class="markdown-view">{expanded()!.markdown}</pre>
+                <div class="history-preview">
+                  <p class="muted history-caption">
+                    The copy as it would be generated now.
+                  </p>
+                  <div class="preview-body">
+                    <PreviewText markdown={expanded()!.markdown} />
+                  </div>
+                </div>
               </Show>
             </li>
           )}

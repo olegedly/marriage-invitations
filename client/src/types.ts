@@ -30,6 +30,13 @@ export interface GenerationRequest {
   photoShape: PhotoShape;
 }
 
+/**
+ * A past generation, as history returns it.
+ *
+ * The guest's choices and nothing else: the markdown and the PDF are both built
+ * from these, so a client that wants either asks for it rather than reading a
+ * stored copy back.
+ */
 export interface HistoryEntry {
   id: string;
   createdAt: string;
@@ -42,10 +49,6 @@ export interface HistoryEntry {
   personalNote: string | null;
   photoShape: PhotoShape;
   filename: string;
-}
-
-export interface HistoryDetail extends HistoryEntry {
-  markdown: string;
 }
 
 /**

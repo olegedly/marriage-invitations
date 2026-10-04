@@ -205,7 +205,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       ...(deps.renderPdf ? { render: deps.renderPdf } : {}),
     });
 
-    deps.history.save({ input: result.value, ...rendered });
+    deps.history.save({ input: result.value, filename: rendered.filename });
 
     return reply
       .header('content-type', 'application/pdf')
@@ -213,46 +213,30 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       .send(pdf);
   });
 
+  /**
+   * The choices a generation was made with, and nothing else.
+   *
+   * Everything a client needs to act on an entry is here: the text preview
+   * posts this straight back to /api/preview, and the form is populated from
+   * it. There is no per-entry detail route because there is no detail beyond
+   * these fields — the markdown and the PDF are both derived from them.
+   */
   app.get('/api/history', async () => {
-    return deps.history.list().map(({ markdown: _markdown, ...rest }) => rest);
+    return deps.history.list();
   });
-
-  app.get<{ Params: { id: string } }>('/api/history/:id', async (request, reply) => {
-    const entry = deps.history.get(request.params.id);
-    if (!entry) return reply.status(404).send({ error: 'Not found' });
-    return entry;
-  });
-
-  app.get<{ Params: { id: string } }>(
-    '/api/history/:id/pdf',
-    async (request, reply) => {
-      const entry = deps.history.get(request.params.id);
-      if (!entry) return reply.status(404).send({ error: 'Not found' });
-
-      const pdf = await generatePdf(entry.markdown, {
-        ...(deps.renderPdf ? { render: deps.renderPdf } : {}),
-      });
-
-      return reply
-        .header('content-type', 'application/pdf')
-        .header('content-disposition', contentDisposition(entry.filename))
-        .send(pdf);
-    },
-  );
 
   /**
-   * Re-render a past invitation with the constants in force now.
+   * Re-render a past invitation from its stored choices.
    *
-   * The stored markdown records what was generated, so it keeps the links and
-   * wording of that moment even after a redeploy changes them. That is what
-   * /pdf above serves. This route deliberately ignores the stored markdown and
-   * rebuilds the invitation from the stored guest choices instead, so a
-   * corrected Zoom link, Facebook URL or event date reaches the guest on a
-   * re-download. The calendar origin comes from the current request, exactly as
-   * it does for a fresh generation, rather than the origin captured originally.
+   * Only the choices are kept, never the markdown they produced, so this is the
+   * one way back to a past invitation and it always builds it as the wedding
+   * details stand now: a corrected Zoom link, Facebook URL or event date
+   * reaches the guest on a re-download. The calendar origin comes from the
+   * current request, exactly as it does for a fresh generation, rather than
+   * the origin captured at the time.
    */
   app.get<{ Params: { id: string } }>(
-    '/api/history/:id/pdf/current',
+    '/api/history/:id/pdf',
     async (request, reply) => {
       const entry = deps.history.get(request.params.id);
       if (!entry) return reply.status(404).send({ error: 'Not found' });

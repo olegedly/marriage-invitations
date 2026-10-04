@@ -479,19 +479,18 @@ button.ghost:disabled {
 }
 
 .history-caption {
-  margin: 12px 0 -6px;
+  margin: 0 0 10px;
   font-size: 12px;
 }
 
-.markdown-view {
+/* The copy a Preview expands, in the same panel the generation preview uses
+   and bounded like it: a long invitation scrolls rather than stretching the
+   list down the page. */
+.history-preview {
   margin: 12px 0 0;
   padding: 12px;
   background: var(--accent-soft);
   border-radius: 7px;
-  font-size: 12.5px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
   max-height: 320px;
   overflow-y: auto;
 }

@@ -49,10 +49,11 @@ function NavLink(props: { href: string; children: string; class?: string }) {
 /**
  * Route contents, selected without relying on router component exports.
  *
- * `prefill` carries the choices of a history entry into a fresh generation.
- * It lives in App because the two routes are siblings, and it is handed back
- * as null once the form has taken it, so returning to Generate later starts
- * blank rather than silently resurrecting the last reused invitation.
+ * `prefill` carries the choices of a history entry into a fresh generation,
+ * which is what history's Amend button does. It lives in App because the two
+ * routes are siblings, and it is handed back as null once the form has taken
+ * it, so returning to Generate later starts blank rather than silently
+ * resurrecting the last amended invitation.
  */
 function Outlet(props: {
   countries: CountryZone[];
@@ -72,7 +73,7 @@ function Outlet(props: {
       />
     }>
       <History
-        onReuse={(request) => {
+        onAmend={(request) => {
           props.onPrefillChange(request);
           navigate('/');
         }}

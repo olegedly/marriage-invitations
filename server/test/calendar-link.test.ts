@@ -35,7 +35,8 @@ describe('calendar call to action in the invitation', () => {
 
   test('the link is whatever the constants say, not a copy baked into the renderer', () => {
     // A redeploy can repoint the event without touching the renderer, and the
-    // re-render path (/pdf/current) picks the new link up for a past guest.
+    // re-render path (GET /api/history/:id/pdf) picks the new link up for a past
+    // guest.
     const { markdown } = renderInvitation(base(), {
       event: { ...EVENT, calendarLink: 'https://calendar.app.google/other-event' },
     });
