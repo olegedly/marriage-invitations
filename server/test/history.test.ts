@@ -58,7 +58,6 @@ const PREVIOUS_SCHEMA = `
     guests        TEXT NOT NULL,
     language      TEXT NOT NULL,
     number        TEXT NOT NULL,
-    register      TEXT NOT NULL,
     gender        TEXT NOT NULL,
     country_code  TEXT NOT NULL,
     personal_note TEXT,
@@ -70,7 +69,7 @@ const PREVIOUS_SCHEMA = `
 
 const PREVIOUS_INSERT = `
   INSERT INTO generations VALUES (
-    'old-1', '2026-01-01T00:00:00.000Z', 'Loimie', 'en', 'singular', 'formal',
+    'old-1', '2026-01-01T00:00:00.000Z', 'Loimie', 'en', 'singular',
     'neutral', 'RO', null, 'arched', 'Invitation_Loimie_EN.pdf',
     '> Usa ka mensahe alang kanimo
 >
@@ -134,7 +133,6 @@ describe('generation history', () => {
         guests: 'Анна',
         language: 'ru',
         number: 'singular',
-        register: 'informal',
         gender: 'feminine',
         countryCode: 'RU',
       }),
@@ -144,7 +142,6 @@ describe('generation history', () => {
     expect(entry).toMatchObject({
       language: 'ru',
       number: 'singular',
-      register: 'informal',
       gender: 'feminine',
       countryCode: 'RU',
     });

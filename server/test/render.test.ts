@@ -8,7 +8,7 @@ import { render, guestInput as input } from './support/render.js';
  * worked examples taken from the spec, not recomputed the way the code does.
  */
 
-describe('renderInvitation — English, one guest, formal', () => {
+describe('renderInvitation — English, one guest', () => {
   test('addresses the guest by name and produces markdown', () => {
     const { markdown } = render(input());
 

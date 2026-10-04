@@ -42,7 +42,6 @@ function validBody(overrides: Record<string, unknown> = {}) {
     guests: 'Loimie',
     language: 'en',
     number: 'singular',
-    register: 'formal',
     gender: 'neutral',
     countryCode: 'RO',
     personalNote: null,
@@ -161,7 +160,7 @@ describe('POST /api/generate', () => {
     // A tab left open across a redeploy sends the payload it was built with.
     // The frame is the one choice that can stand in for itself: it changes the
     // look, never the words, so a default is safe where one for a language or a
-    // tone would not be.
+    // number would not be.
     const withoutShape = validBody();
     delete (withoutShape as Record<string, unknown>).photoShape;
 

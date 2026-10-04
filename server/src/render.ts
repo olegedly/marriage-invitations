@@ -12,15 +12,20 @@ import { labelFor, localTime, zoneForCountry } from './timezone.js';
 import { coverMarkup, type PhotoShape } from './cover.js';
 
 export type NumberForm = 'singular' | 'plural';
-export type Register = 'formal' | 'informal';
 export type Gender = 'masculine' | 'feminine' | 'neutral';
 
 export interface GenerationInput {
   /** Free-form guest string: one person or several. Never parsed. */
   readonly guests: string;
   readonly language: Language;
+  /**
+   * How many people the invitation addresses.
+   *
+   * The only grammatical axis there is. It selects the familiar singular or
+   * the plural forms; English reads the same either way, because its copy
+   * marks neither number nor formality.
+   */
   readonly number: NumberForm;
-  readonly register: Register;
   readonly gender: Gender;
   /** Country code selecting the guest's timezone assumption. */
   readonly countryCode: string;
@@ -90,36 +95,25 @@ interface AddressCopy {
  * then be a comma with nothing after it. The renderer adds the name, so the
  * punctuation belongs to the name, not to this string.
  *
- * Russian varies by number, register and gender; the plural form collapses
- * gender entirely. English and Cebuano ignore gender.
+ * Russian varies by number and gender; the plural form collapses gender
+ * entirely. English and Cebuano ignore gender.
  */
 function greeting(input: GenerationInput): string {
-  const { language, number, register, gender } = input;
+  const { language, number, gender } = input;
 
   if (language === 'ru') {
-    if (number === 'plural') {
-      return register === 'formal' ? 'Уважаемые' : 'Дорогие';
-    }
-    if (register === 'formal') {
-      return gender === 'feminine' ? 'Уважаемая' : 'Уважаемый';
-    }
+    if (number === 'plural') return 'Дорогие';
     return gender === 'feminine' ? 'Дорогая' : 'Дорогой';
   }
 
   if (language === 'ceb') {
-    // Cebuano has no grammatical gender. To one person, formal and informal
-    // address the same way, so register does not change the greeting.
+    // Cebuano has no grammatical gender: number is the only thing the
+    // greeting marks.
     return number === 'plural' ? 'Minahal nga mga' : 'Minahal nga';
   }
 
   return 'Dear';
 }
-
-const YOU: Record<Language, { singular: string; plural: string }> = {
-  en: { singular: 'you', plural: 'you' },
-  ru: { singular: 'тебя', plural: 'вас' },
-  ceb: { singular: 'ikaw', plural: 'kamo' },
-};
 
 const JOIN_CTA: Record<Language, string> = {
   en: 'Join the ceremony',
@@ -142,37 +136,35 @@ const CALENDAR_CTA: Record<Language, string> = {
 };
 
 /**
- * Intro paragraph, written per language and address form.
+ * Intro paragraph, written per language and number.
  *
  * Russian and Cebuano inflect for the person addressed, so they cannot be
- * assembled from a shared stem: "разделить с вами" (formal/plural) against
- * "разделить с тобой" (informal singular), and the polite "makauban kamo"
- * against the enclitic "makauban ka". English marks no such distinction, so its
- * three forms are the same sentence.
+ * assembled from a shared stem: "разделить с тобой" against "разделить с
+ * вами", and the enclitic "makauban ka" against the plural "makauban kamo".
+ * English marks no such distinction, so one paragraph serves both.
+ *
+ * There is no formal variant. The plural string is what polite address to one
+ * person used to borrow — Russian "вы" and Cebuano "kamo" are the plural forms
+ * — so a singular invitation is simply the familiar one.
  */
-const INTRO: Record<Language, Record<'formalSingular' | 'informalSingular' | 'plural', string>> = {
+const INTRO: Record<Language, Record<NumberForm, string>> = {
   en: {
-    formalSingular:
-      'We would be delighted to have you with us on this special occasion. The online wedding ceremony is a video call in Zoom and takes only 30 minutes. Please join us in finding out whether online marriages are real! We sure hope they are :D',
-    informalSingular:
+    singular:
       'We would be delighted to have you with us on this special occasion. The online wedding ceremony is a video call in Zoom and takes only 30 minutes. Please join us in finding out whether online marriages are real! We sure hope they are :D',
     plural:
       'We would be delighted to have you with us on this special occasion. The online wedding ceremony is a video call in Zoom and takes only 30 minutes. Please join us in finding out whether online marriages are real! We sure hope they are :D',
   },
   ru: {
-    formalSingular:
-      'Мы будем счастливы разделить с вами этот особенный день. Онлайн-церемония — это видеозвонок в Zoom, и она занимает всего 30 минут. Присоединяйтесь к нам, чтобы узнать: онлайн-браки — это скам или нет. Мы очень надеемся, что нет :D',
-    informalSingular:
+    singular:
       'Мы будем счастливы разделить с тобой этот особенный день. Онлайн-церемония — это видеозвонок в Zoom, и она занимает всего 30 минут. Присоединяйся к нам, чтобы узнать: онлайн-браки — это скам или нет. Мы очень надеемся, что нет :D',
     plural:
       'Мы будем счастливы разделить с вами этот особенный день. Онлайн-церемония — это видеозвонок в Zoom, и она занимает всего 30 минут. Присоединяйтесь к нам, чтобы узнать: онлайн-браки — это скам или нет. Мы очень надеемся, что нет :D',
   },
   ceb: {
-    // Cebuano has no gender. To one person, formal address uses the polite
-    // plural ("kamo"); informal address uses the enclitic "ka" on the verb.
-    formalSingular:
-      'Malipayon kami nga makauban kamo namo niining espesyal nga okasyon. Ang online nga kasal kay usa ka video call sa Zoom ug mga 30 minutos ra. Apil uban namo aron mahibaloan kung tinuod ba ang mga kasal online! Hinaot nga tinuod gyud :D',
-    informalSingular:
+    // Cebuano has no gender. "ka" is the enclitic for one person, "kamo" the
+    // plural — which is also what this language used to say to one person
+    // politely.
+    singular:
       'Malipayon kami nga makauban ka namo niining espesyal nga okasyon. Ang online nga kasal kay usa ka video call sa Zoom ug mga 30 minutos ra. Apil uban namo aron mahibaloan kung tinuod ba ang mga kasal online! Hinaot nga tinuod gyud :D',
     plural:
       'Malipayon kami nga makauban kamo namo niining espesyal nga okasyon. Ang online nga kasal kay usa ka video call sa Zoom ug mga 30 minutos ra. Apil uban namo aron mahibaloan kung tinuod ba ang mga kasal online! Hinaot nga tinuod gyud :D',
@@ -205,14 +197,6 @@ function couple(event: EventConstants, language: Language): string {
     event.bride,
     language,
   )}`;
-}
-
-const INTRO_FORMS = ['formalSingular', 'informalSingular', 'plural'] as const;
-type IntroForm = (typeof INTRO_FORMS)[number];
-
-function introForm(input: GenerationInput): IntroForm {
-  if (input.number === 'plural') return 'plural';
-  return input.register === 'formal' ? 'formalSingular' : 'informalSingular';
 }
 
 /**
@@ -287,7 +271,7 @@ export function renderInvitation(
   // repeating a title and the couple above it.
   lines.push(`${greeting(input)} **${guests}**`);
   lines.push('');
-  lines.push(INTRO[language][introForm(input)]);
+  lines.push(INTRO[language][input.number]);
   lines.push('');
 
   if (personalNote && personalNote.trim()) {
@@ -345,9 +329,4 @@ export function renderInvitation(
     ].join('\n'),
     filename: invitationFilename(guests, language),
   };
-}
-
-/** Exposed for the UI: the pronoun form that will be used for a given input. */
-export function pronounFor(input: Pick<GenerationInput, 'language' | 'number'>): string {
-  return YOU[input.language][input.number];
 }

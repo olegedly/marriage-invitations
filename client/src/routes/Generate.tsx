@@ -10,7 +10,6 @@ import {
   type Language,
   type NumberForm,
   type PhotoShape,
-  type Register,
 } from '../types.js';
 
 export function Generate(props: {
@@ -35,7 +34,6 @@ export function Generate(props: {
   // pairing such as English copy addressed to a Romanian guest.
   const [language, setLanguage] = createSignal<Language>(initial?.language ?? 'en');
   const [number, setNumber] = createSignal<NumberForm>(initial?.number ?? 'singular');
-  const [register, setRegister] = createSignal<Register>(initial?.register ?? 'formal');
   const [gender, setGender] = createSignal<Gender>(initial?.gender ?? 'neutral');
   const [countryCode, setCountryCode] = createSignal(initial?.countryCode ?? 'PH');
   const [personalNote, setPersonalNote] = createSignal(initial?.personalNote ?? '');
@@ -65,6 +63,14 @@ export function Generate(props: {
   const noteTooLong = createMemo(() => noteLength() > NOTE_LIMIT);
 
   /**
+   * Number changes the wording only where the language inflects for it.
+   * English marks neither number nor formality — "Dear" and one paragraph
+   * serve one guest and several alike — so the selector is hidden there rather
+   * than offered as a choice that leaves the invitation unchanged.
+   */
+  const numberMatters = createMemo(() => language() !== 'en');
+
+  /**
    * Gender only affects Russian singular address, so it is shown only when it
    * actually changes the wording. Offering it elsewhere would imply a meaning
    * the other languages do not have.
@@ -82,7 +88,6 @@ export function Generate(props: {
       guests: guests().trim(),
       language: language(),
       number: number(),
-      register: register(),
       gender: gender(),
       countryCode: countryCode(),
       personalNote: personalNote().trim() || null,
@@ -162,7 +167,6 @@ export function Generate(props: {
       guests: guests().trim(),
       language: language(),
       number: number(),
-      register: register(),
       gender: gender(),
       countryCode: countryCode(),
       personalNote: personalNote().trim() || null,
@@ -218,53 +222,33 @@ export function Generate(props: {
         </select>
       </label>
 
-      <fieldset class="field">
-        <legend class="label">How many people is this for?</legend>
-        <div class="choices">
-          <label class={{ choice: true, active: number() === 'singular' }}>
-            <input
-              type="radio"
-              name="number"
-              checked={number() === 'singular'}
-              onChange={() => setNumber('singular')}
-            />
-            One person
-          </label>
-          <label class={{ choice: true, active: number() === 'plural' }}>
-            <input
-              type="radio"
-              name="number"
-              checked={number() === 'plural'}
-              onChange={() => setNumber('plural')}
-            />
-            Several people
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset class="field">
-        <legend class="label">Tone</legend>
-        <div class="choices">
-          <label class={{ choice: true, active: register() === 'formal' }}>
-            <input
-              type="radio"
-              name="register"
-              checked={register() === 'formal'}
-              onChange={() => setRegister('formal')}
-            />
-            Formal
-          </label>
-          <label class={{ choice: true, active: register() === 'informal' }}>
-            <input
-              type="radio"
-              name="register"
-              checked={register() === 'informal'}
-              onChange={() => setRegister('informal')}
-            />
-            Informal — close friends
-          </label>
-        </div>
-      </fieldset>
+      <Show when={numberMatters()}>
+        <fieldset class="field">
+          <legend class="label">
+            How many people is this for?<em>the wording follows the count</em>
+          </legend>
+          <div class="choices">
+            <label class={{ choice: true, active: number() === 'singular' }}>
+              <input
+                type="radio"
+                name="number"
+                checked={number() === 'singular'}
+                onChange={() => setNumber('singular')}
+              />
+              One person
+            </label>
+            <label class={{ choice: true, active: number() === 'plural' }}>
+              <input
+                type="radio"
+                name="number"
+                checked={number() === 'plural'}
+                onChange={() => setNumber('plural')}
+              />
+              Several people
+            </label>
+          </div>
+        </fieldset>
+      </Show>
 
       <Show when={genderMatters()}>
         <fieldset class="field">

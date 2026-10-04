@@ -16,7 +16,7 @@
 import Database from 'better-sqlite3';
 import { existsSync, rmSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import type { GenerationInput, Gender, NumberForm, Register } from './render.js';
+import type { GenerationInput, Gender, NumberForm } from './render.js';
 import type { Language } from './event.js';
 import { DEFAULT_PHOTO_SHAPE, type PhotoShape } from './cover.js';
 
@@ -26,7 +26,6 @@ export interface HistoryEntry {
   readonly guests: string;
   readonly language: Language;
   readonly number: NumberForm;
-  readonly register: Register;
   readonly gender: Gender;
   readonly countryCode: string;
   readonly personalNote: string | null;
@@ -52,7 +51,6 @@ interface Row {
   guests: string;
   language: string;
   number: string;
-  register: string;
   gender: string;
   country_code: string;
   personal_note: string | null;
@@ -67,7 +65,6 @@ function toEntry(row: Row): HistoryEntry {
     guests: row.guests,
     language: row.language as Language,
     number: row.number as NumberForm,
-    register: row.register as Register,
     gender: row.gender as Gender,
     countryCode: row.country_code,
     personalNote: row.personal_note,
@@ -97,7 +94,6 @@ const SCHEMA = `
     guests        TEXT NOT NULL,
     language      TEXT NOT NULL,
     number        TEXT NOT NULL,
-    register      TEXT NOT NULL,
     gender        TEXT NOT NULL,
     country_code  TEXT NOT NULL,
     personal_note TEXT,
@@ -122,7 +118,6 @@ export function generationInputOf(entry: HistoryEntry): GenerationInput {
     guests: entry.guests,
     language: entry.language,
     number: entry.number,
-    register: entry.register,
     gender: entry.gender,
     countryCode: entry.countryCode,
     personalNote: entry.personalNote,
@@ -225,10 +220,10 @@ export function openHistory(path: string, options: OpenHistoryOptions = {}): His
 
   const insert = db.prepare(`
     INSERT INTO generations
-      (id, created_at, guests, language, number, register, gender,
+      (id, created_at, guests, language, number, gender,
        country_code, personal_note, photo_shape, filename)
     VALUES
-      (@id, @created_at, @guests, @language, @number, @register, @gender,
+      (@id, @created_at, @guests, @language, @number, @gender,
        @country_code, @personal_note, @photo_shape, @filename)
   `);
 
@@ -245,7 +240,6 @@ export function openHistory(path: string, options: OpenHistoryOptions = {}): His
         guests: input.guests,
         language: input.language,
         number: input.number,
-        register: input.register,
         gender: input.gender,
         countryCode: input.countryCode,
         personalNote: input.personalNote,
@@ -259,7 +253,6 @@ export function openHistory(path: string, options: OpenHistoryOptions = {}): His
         guests: entry.guests,
         language: entry.language,
         number: entry.number,
-        register: entry.register,
         gender: entry.gender,
         country_code: entry.countryCode,
         personal_note: entry.personalNote,

@@ -39,7 +39,6 @@ export interface AppDeps {
 
 const LANGUAGES = new Set(['en', 'ru', 'ceb']);
 const NUMBERS = new Set(['singular', 'plural']);
-const REGISTERS = new Set(['formal', 'informal']);
 const GENDERS = new Set(['masculine', 'feminine', 'neutral']);
 const PHOTO_SHAPES = new Set<PhotoShape>(['arched', 'rectangular']);
 
@@ -70,9 +69,6 @@ function validate(body: unknown): ValidationOk | ValidationErr {
   if (typeof b.number !== 'string' || !NUMBERS.has(b.number)) {
     return { ok: false, message: 'Unknown number form' };
   }
-  if (typeof b.register !== 'string' || !REGISTERS.has(b.register)) {
-    return { ok: false, message: 'Unknown register' };
-  }
   if (typeof b.gender !== 'string' || !GENDERS.has(b.gender)) {
     return { ok: false, message: 'Unknown gender' };
   }
@@ -99,7 +95,7 @@ function validate(body: unknown): ValidationOk | ValidationErr {
   /*
    * The frame shape may be omitted and then takes the default. It is the only
    * choice with a sensible stand-in: every other field changes what the
-   * invitation says, and silently choosing a language or a tone on the
+   * invitation says, and silently choosing a language or a number on the
    * caller's behalf would put words in the guest's mouth. A browser tab left
    * open across a redeploy is the case this forgives, and a value that IS sent
    * is still checked.
@@ -118,7 +114,6 @@ function validate(body: unknown): ValidationOk | ValidationErr {
       guests: b.guests.trim(),
       language: b.language as GenerationInput['language'],
       number: b.number as GenerationInput['number'],
-      register: b.register as GenerationInput['register'],
       gender: b.gender as GenerationInput['gender'],
       countryCode: b.countryCode,
       personalNote,

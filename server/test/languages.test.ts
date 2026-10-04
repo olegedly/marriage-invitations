@@ -7,6 +7,10 @@ import { render } from './support/render.js';
  *
  * These assert which grammatical form was selected — not that the prose reads
  * naturally. Prose quality is a proofreading matter, not a testable one.
+ *
+ * Number is the only address axis. Singular uses the familiar forms and plural
+ * the plural ones; formality is not offered, so no pair of inputs differs by
+ * register alone.
  */
 
 function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
@@ -14,7 +18,6 @@ function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
     guests: 'Guest Name',
     language: 'en',
     number: 'singular',
-    register: 'formal',
     gender: 'neutral',
     countryCode: 'RO',
     personalNote: null,
@@ -24,34 +27,20 @@ function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
 }
 
 describe('Russian address forms', () => {
-  test('formal singular masculine', () => {
-    const { markdown } = render(
-      input({ language: 'ru', register: 'formal', gender: 'masculine' }),
-    );
-    expect(markdown).toContain('Уважаемый');
-  });
-
-  test('formal singular feminine', () => {
-    const { markdown } = render(
-      input({ language: 'ru', register: 'formal', gender: 'feminine' }),
-    );
-    expect(markdown).toContain('Уважаемая');
-  });
-
-  test('informal singular masculine', () => {
-    const { markdown } = render(
-      input({ language: 'ru', register: 'informal', gender: 'masculine' }),
-    );
+  test('singular masculine', () => {
+    const { markdown } = render(input({ language: 'ru', gender: 'masculine' }));
     expect(markdown).toContain('Дорогой');
-    expect(markdown).not.toContain('Уважаемый');
   });
 
-  test('informal singular feminine uses the feminine adjective', () => {
-    const { markdown } = render(
-      input({ language: 'ru', register: 'informal', gender: 'feminine' }),
-    );
+  test('singular feminine uses the feminine adjective', () => {
+    const { markdown } = render(input({ language: 'ru', gender: 'feminine' }));
     expect(markdown).toContain('Дорогая');
     expect(markdown).not.toContain('Дорогой');
+  });
+
+  test('plural uses the friends form', () => {
+    const { markdown } = render(input({ language: 'ru', number: 'plural' }));
+    expect(markdown).toContain('Дорогие');
   });
 
   test('plural collapses gender entirely', () => {
@@ -59,51 +48,27 @@ describe('Russian address forms', () => {
     const f = render(input({ language: 'ru', number: 'plural', gender: 'feminine' })).markdown;
 
     expect(m).toBe(f);
-    expect(m).toContain('Уважаемые');
   });
 
-  test('informal plural uses the friends form', () => {
-    const { markdown } = render(
-      input({ language: 'ru', number: 'plural', register: 'informal' }),
-    );
-    expect(markdown).toContain('Дорогие');
-  });
-
-  test('informal singular addresses with ты, not вы', () => {
-    const { markdown } = render(
-      input({ language: 'ru', register: 'informal', gender: 'masculine' }),
-    );
+  test('singular addresses one guest with ты, not вы', () => {
+    const { markdown } = render(input({ language: 'ru', gender: 'masculine' }));
 
     // "с вами" contradicts "Дорогой" — the pronoun must be singular.
     expect(markdown).not.toContain('с вами');
     expect(markdown).toContain('с тобой');
   });
 
-  test('formal singular addresses with вы', () => {
-    const { markdown } = render(
-      input({ language: 'ru', register: 'formal', gender: 'masculine' }),
-    );
+  test('plural addresses several guests with вы, not ты', () => {
+    const { markdown } = render(input({ language: 'ru', number: 'plural' }));
+
     expect(markdown).toContain('с вами');
     expect(markdown).not.toContain('с тобой');
-  });
-
-  test('informal singular uses ты-forms in the CTAs', () => {
-    const formal = render(
-      input({ language: 'ru', register: 'formal', gender: 'masculine' }),
-    ).markdown;
-    const informal = render(
-      input({ language: 'ru', register: 'informal', gender: 'masculine' }),
-    ).markdown;
-
-    expect(formal).not.toBe(informal);
   });
 });
 
 describe('Cebuano address forms', () => {
-  test('singular informal addresses one person with the enclitic ka', () => {
-    const { markdown } = render(
-      input({ language: 'ceb', number: 'singular', register: 'informal' }),
-    );
+  test('singular addresses one guest with the enclitic ka', () => {
+    const { markdown } = render(input({ language: 'ceb', number: 'singular' }));
 
     // Cebuano marks "you" on the verb as the enclitic "ka"; the free pronoun
     // "ikaw" is not required and would read stiffly here.
@@ -111,25 +76,13 @@ describe('Cebuano address forms', () => {
     expect(markdown).not.toContain('makauban kamo');
   });
 
-  test('plural addresses several people with kamo', () => {
-    const { markdown } = render(
-      input({ language: 'ceb', number: 'plural' }),
-    );
+  test('plural addresses several guests with kamo', () => {
+    const { markdown } = render(input({ language: 'ceb', number: 'plural' }));
+
     expect(markdown).toContain('makauban kamo');
   });
 
-  test('formal singular uses the polite plural, never the bare ka', () => {
-    const { markdown } = render(
-      input({ language: 'ceb', number: 'singular', register: 'formal' }),
-    );
-
-    // For one respected person, "kamo" is polite while "ka" is too familiar.
-    expect(markdown).toContain('makauban kamo namo');
-    // Word-boundary match so the "ka" inside "kamo" is not a false positive.
-    expect(markdown).not.toMatch(/makauban ka\b(?!mo)/);
-  });
-
-  test('plural greeting uses the plural form, singular the singular', () => {
+  test('plural greeting uses mga, singular does not', () => {
     const plural = render(input({ language: 'ceb', number: 'plural' })).markdown;
     const singular = render(input({ language: 'ceb', number: 'singular' })).markdown;
 
@@ -146,9 +99,7 @@ describe('Cebuano address forms', () => {
   });
 
   test('shows the time in Cebuano, not English', () => {
-    const { markdown } = render(
-      input({ language: 'ceb', countryCode: 'PH' }),
-    );
+    const { markdown } = render(input({ language: 'ceb', countryCode: 'PH' }));
 
     // "October 13, 2026 at 23:10" would be English leaking into Bisaya copy.
     expect(markdown).toContain('Martes, Oktubre 13, 2026 sa 23:10');
@@ -171,12 +122,26 @@ describe('English address forms', () => {
     expect(markdown).not.toContain('friends');
     expect(markdown).not.toContain('Dear,');
   });
+});
 
-  test('register does not change the English greeting', () => {
-    const formal = render(input({ language: 'en', register: 'formal' })).markdown;
-    const informal = render(input({ language: 'en', register: 'informal' })).markdown;
+/**
+ * The surviving rule, and the reason the form no longer offers a tone: number
+ * changes the invitation only where the language actually inflects for it.
+ */
+describe('number is the only address axis', () => {
+  test('English renders one invitation for one guest or several', () => {
+    const one = render(input({ language: 'en', number: 'singular' })).markdown;
+    const many = render(input({ language: 'en', number: 'plural' })).markdown;
 
-    expect(formal).toContain('Dear **Guest Name**');
-    expect(informal).toContain('Dear **Guest Name**');
+    expect(one).toBe(many);
+  });
+
+  test('Russian and Cebuano change with number', () => {
+    for (const language of ['ru', 'ceb'] as const) {
+      const one = render(input({ language, number: 'singular' })).markdown;
+      const many = render(input({ language, number: 'plural' })).markdown;
+
+      expect(one).not.toBe(many);
+    }
   });
 });

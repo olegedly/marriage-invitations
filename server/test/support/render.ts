@@ -25,7 +25,6 @@ export function guestInput(overrides: Partial<GenerationInput> = {}): Generation
     guests: 'Loimie',
     language: 'en',
     number: 'singular',
-    register: 'formal',
     gender: 'neutral',
     countryCode: 'RO',
     personalNote: null,

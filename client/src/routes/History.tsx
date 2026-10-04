@@ -20,7 +20,6 @@ function requestOf(entry: HistoryEntry): GenerationRequest {
     guests: entry.guests,
     language: entry.language,
     number: entry.number,
-    register: entry.register,
     gender: entry.gender,
     countryCode: entry.countryCode,
     personalNote: entry.personalNote,
@@ -128,8 +127,12 @@ export function History(props: { onAmend: (request: GenerationRequest) => void }
                   <strong>{entry.guests}</strong>
                   <span class="tags">
                     <span class="tag">{LANGUAGE_LABELS[entry.language]}</span>
-                    <span class="tag">{entry.number}</span>
-                    <span class="tag">{entry.register}</span>
+                    {/* Shown only where it changes the wording, like gender:
+                        an English record reads the same for one guest or
+                        several, so the tag would carry nothing. */}
+                    <Show when={entry.language !== 'en'}>
+                      <span class="tag">{entry.number}</span>
+                    </Show>
                     <Show when={entry.gender !== 'neutral'}>
                       <span class="tag">{GENDER_LABELS[entry.gender]}</span>
                     </Show>

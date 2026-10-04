@@ -360,18 +360,26 @@ per-zone entry in `timezone.ts` if that ever matters.
 
 ## Languages and address forms
 
-Guest names are a single free string — never parsed. Address is driven by two
-explicit selectors, plus gender where it matters:
+Guest names are a single free string — never parsed. **Number is the only
+address axis**; gender matters only where the language marks it:
 
 | Language | Mechanism |
 | --- | --- |
-| English | No variation — the greeting is just "Dear"; the guest's own name supplies the noun |
-| Russian | Number, register **and** gender for singular; plural collapses gender |
-| Cebuano | Number only — no grammatical gender. `kamo` is plural *and* the polite singular |
+| English | No variation — the greeting is just "Dear"; the guest's own name supplies the noun. One paragraph serves one guest or several, so the selector is hidden |
+| Russian | Number and gender for singular; plural collapses gender |
+| Cebuano | Number only — no grammatical gender |
 
-The gender selector appears **only** for Russian singular, where it changes the
-wording (`Уважаемый` / `Уважаемая`). Every other combination ignores it, so the
-form never implies a distinction the language does not make.
+There is deliberately **no formality selector**. The copy is written in one warm
+register, so a singular invitation is addressed with the familiar `ты`/`ka`
+forms; a plural one uses `вы`/`kamo`, which is what polite address to a single
+person used to borrow. Adding a tone back would mean a second string per address
+form in `INTRO`, a branch in `greeting()`, and a value in the history schema
+that past records would then have to carry.
+
+The number selector appears **only** where the wording actually changes — that
+is, outside English. The gender selector appears **only** for Russian singular,
+where it changes the wording (`Дорогой` / `Дорогая`). Every other combination
+ignores them, so a form never implies a distinction the language does not make.
 
 ## Testing
 
@@ -521,7 +529,7 @@ client/
   transliterates (`Invitation_SemyaIvanovykh_RU.pdf`) for anything that cannot
   read `filename*`.
 - **Russian copy is grammatically correct but should be proofread** by a native
-  speaker, especially the informal forms. Cebuano likewise. The generated
+  speaker. Cebuano likewise. The generated
   country labels use a hand-written genitive table (`ru` in `countries.ts`)
   rather than an inflector, so those forms deserve a native speaker's eye too.
 - **`client/public/favicon.svg` is the only icon source.** The `.png` files
