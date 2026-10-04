@@ -25,8 +25,8 @@ export const COVER_PHOTO = 'images/photo.jpg';
 /**
  * The shape of the photograph's frame on the cover.
  *
- * A guest-facing choice like the language or the tone, so it is carried in the
- * generation input and stored with the record — a past invitation is
+ * A guest-facing choice like the language or the address form, so it is carried
+ * in the generation input and stored with the record — a past invitation is
  * re-downloaded with the frame it was sent with, not with today's default.
  */
 export type PhotoShape = 'arched' | 'rectangular';

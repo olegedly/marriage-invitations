@@ -203,7 +203,7 @@ function couple(event: EventConstants, language: Language): string {
  * Build the full invitation markdown.
  *
  * Structure (fixed, so the single CSS template can be tuned against it):
- *   <section class="cover">      <- page one, raw HTML (see cover.ts)
+ *   <section class="cover cover--<shape>">  <- page one, raw HTML (cover.ts)
  *   <section class="details">    <- page two, the invitation copy
  *     greeting + guest name      <- opens the page; the cover holds the title
  *     intro

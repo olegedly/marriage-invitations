@@ -236,9 +236,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
    * Only the choices are kept, never the markdown they produced, so this is the
    * one way back to a past invitation and it always builds it as the wedding
    * details stand now: a corrected Zoom link, Facebook URL or event date
-   * reaches the guest on a re-download. The calendar origin comes from the
-   * current request, exactly as it does for a fresh generation, rather than
-   * the origin captured at the time.
+   * reaches the guest on a re-download. Nothing here depends on the request,
+   * because every link in the copy is an absolute address held in event.ts.
    */
   app.get<{ Params: { id: string } }>(
     '/api/history/:id/pdf',

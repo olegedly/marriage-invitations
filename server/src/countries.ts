@@ -11,7 +11,9 @@
  *
  * Provenance: ISO codes, English names and zone membership from CLDR via
  * countries-and-timezones; zones verified to resolve against the moment-timezone
- * data used by tzdata.ts (see countries.test.ts).
+ * data used by tzdata.ts (see countries.test.ts). Bouvet Island (BV) is carried
+ * by hand: the source package omits it, and it takes the zone of Norway, the
+ * territory it belongs to.
  */
 
 export interface IsoCountry {
@@ -62,6 +64,7 @@ export const ISO_COUNTRIES: readonly IsoCountry[] = [
   { code: 'BR', name: 'Brazil', zone: 'America/Sao_Paulo', ru: 'Бразилии' },
   { code: 'BS', name: 'Bahamas', zone: 'America/Toronto', ru: 'Багам' },
   { code: 'BT', name: 'Bhutan', zone: 'Asia/Thimphu', ru: 'Бутана' },
+  { code: 'BV', name: 'Bouvet Island', zone: 'Europe/Oslo', ru: 'острова Буве' },
   { code: 'BW', name: 'Botswana', zone: 'Africa/Maputo', ru: 'Ботсваны' },
   { code: 'BY', name: 'Belarus', zone: 'Europe/Minsk', ru: 'Беларуси' },
   { code: 'BZ', name: 'Belize', zone: 'America/Belize', ru: 'Белиза' },

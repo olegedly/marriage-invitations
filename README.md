@@ -3,8 +3,8 @@
 A small web app for generating personalised wedding invitations as PDFs, in
 English, Russian and Bisaya (Cebuano).
 
-Enter a guest name, pick a language and a tone, choose the guest's country, add
-an optional personal line — and download a PDF ready to send. The invitation's
+Enter a guest name, pick a language, choose the guest's country, add an
+optional personal line — and download a PDF ready to send. The invitation's
 text updates in a live preview as you fill the form, so the wording can be read
 before anything is generated. Every generation is kept in a history you can
 revisit: an entry can be read as text, built into a PDF again, or loaded back
@@ -60,8 +60,8 @@ frame shape it was sent with — rather than from a stored copy of the markdown.
 The frame shape is the one generation choice that changes nothing about the
 wording — it is a look, not a reading. It is a choice all the same, picked per
 guest on the form and carried in the generation input like the language or the
-tone, so a record is re-downloaded with the shape it was sent with. The two
-shapes are two rules keyed on a class the cover emits, `.cover--arched` and
+address form, so a record is re-downloaded with the shape it was sent with. The
+two shapes are two rules keyed on a class the cover emits, `.cover--arched` and
 `.cover--rectangular`, so neither depends on the other being absent.
 
 Because it says nothing, it is also the only field the API will supply for
@@ -73,13 +73,13 @@ The page breaks and the copy live in the markdown; only the appearance lives in
 the stylesheet. Page two's copy is one flex column centred in the frame, so a
 short invitation sits in the middle of the sheet rather than clinging to the top;
 the section has a floor rather than a fixed height, so the centring spends free
-space only when there is some. Its blocks are spaced by one uniform flex gap
-rather than by per-block margins — margins do not collapse in a flex column, so a
-bottom margin would stack with the next block's top margin, and a block that is
-not rendered at all would still leave its gap behind. A personal note longer than
-the sheet can hold runs onto a plain third sheet rather than being clipped — the
-frame is anchored to the top of page two at exactly one page tall, so it never
-stretches or distorts.
+space only when there is some. Its blocks are spaced by one uniform flex gap,
+with only the few deliberate offsets set as margins — margins do not collapse in
+a flex column, so a bottom margin would stack with the next block's top margin,
+and a block that is not rendered at all would still leave its gap behind. A
+personal note longer than the sheet can hold runs onto a plain third sheet rather
+than being clipped — the frame is anchored to the top of page two at exactly one
+page tall, so it never stretches or distorts.
 
 Both pages are centred flex columns, so their page inset is declared as
 `body > section.cover` / `body > section.details` rather than on the classes
@@ -124,13 +124,13 @@ PDF 3.5× *larger* than the JPEG it replaced, so "modern format" is the
 expensive choice here.
 
 The sizes follow the two display boxes, not the other way round.
-`images/photo.jpg` fills 74×84mm (`.cover-photo img`), so 900px wide is 300 ppi,
-the print standard. `images/frame.jpg` is stretched across a whole A5 at 100%
-width, which makes it 176 ppi — the resolution-limited asset rather than an
-oversized one, so it keeps its pixels and its 4:4:4 chroma, and is only ever
-re-encoded losslessly (`jpegtran -optimize -progressive`). Dropping it to 4:2:0
-shifts the gold hairlines across the whole sheet. Together the two files are
-~95% of the PDF, so this is the only place page weight is won or lost.
+`images/photo.jpg` fills 74×84mm (`.cover-photo img`), so 900px wide is ~309 ppi,
+on par with the 300 ppi print standard. `images/frame.jpg` is stretched across a
+whole A5 at 100% width, which makes it 176 ppi — the resolution-limited asset
+rather than an oversized one, so it keeps its pixels and its 4:4:4 chroma, and
+is only ever re-encoded losslessly (`jpegtran -optimize -progressive`). Dropping
+it to 4:2:0 shifts the gold hairlines across the whole sheet. Together the two
+files are ~93% of the PDF, so this is the only place page weight is won or lost.
 
 The palette is sampled from the frame, so the cover and the copy always match
 the artwork: the cream sheet, gold rules and olive ink in `:root` at the top of
@@ -280,11 +280,12 @@ computed from the IANA database at render time, never hardcoded, so a tzdata
 update is picked up on redeploy.
 
 **Nothing is configured per deployment.** The invitation holds no link back to
-the app it was generated on, so there is no base URL to get right: its two links
-are the Zoom call and the calendar call to action, and both are absolute
-addresses that exist independently of where the app runs. A PDF has no base URL
-of its own — which is exactly why an app-hosted link used to need `Host` and
-`X-Forwarded-*` handling. That whole surface went with the link.
+the app it was generated on, so there is no base URL to get right: its links are
+the Zoom call, the calendar call to action and the couple's own Facebook
+profiles, all absolute addresses that exist independently of where the app runs.
+A PDF has no base URL of its own — which is exactly why an app-hosted link used
+to need `Host` and `X-Forwarded-*` handling. That whole surface went with the
+link.
 
 ### Add to calendar
 
@@ -329,11 +330,10 @@ couple never thought about is generated from `countries.ts`, resolved to its
 primary zone. Kosovo (not in ISO 3166-1) is carried as a curated entry. The
 label follows one rule: a **single-zone** country reads
 "<Country> time" in the guest's language ("Germany time", "время Германии"); a
-**multi-zone** country is split into one entry per zone and labeled with a
-well-known, DST-neutral abbreviation ("ET", "WIB", "AET"), because the numeric
-offset beside it would contradict a standard-time abbreviation on a summer date.
-The picker itself shows the offset (or that abbreviation) rather than repeating
-the country name.
+country offered as several zone entries is labeled with a well-known, DST-neutral
+abbreviation ("ET", "WIB", "AET"), because the numeric offset beside it would
+contradict a standard-time abbreviation on a summer date. The picker itself shows
+the offset (or that abbreviation) rather than repeating the country name.
 
 A guest is told which zone **their** time is in and nothing else. A guest in
 Moscow sees МСК; Romania is not named to them, and neither is the Philippines,
@@ -364,17 +364,18 @@ Both the clock face and the offset label are derived from the same source, so
 they can never disagree. `tzDataVersion()` reports the bundled IANA release, and
 bumping the dependency is all that is needed when IANA publishes again.
 
-Countries spanning multiple zones (United States, Canada, Australia, Indonesia,
-Brazil, Mexico, Kazakhstan) are listed per zone with the assumption stated in
-the label, so a guest can see which one was chosen; the plain country is not
-repeated as a second, silently-defaulted row. A country that resolves to
-nothing is rejected rather than silently falling back to the ceremony zone.
-
-For the remaining multi-zone countries (Chile, Spain, New Zealand, the
-Galápagos, and similar) only the primary zone is offered, so the list stays a
-country list rather than an exhaustive zone list. A guest in the Azores or the
-Chathams is therefore the one case this does not handle exactly; add a curated
-per-zone entry in `timezone.ts` if that ever matters.
+Countries spanning several zones that guests are likely to be in (the United
+States, Canada, Australia, Indonesia) are listed per zone with the assumption
+stated in the label, so a guest can see which one was chosen; the plain country
+is not repeated as a second, silently-defaulted row. Countries with one dominant
+zone (Brazil, Mexico, Kazakhstan, Russia) keep a single entry labeled with that
+zone's abbreviation, and for the remaining multi-zone countries (Chile, Spain,
+New Zealand, the Galápagos, and similar) only the primary zone is offered, so the
+list stays a country list rather than an exhaustive zone list. A country that
+resolves to nothing is rejected rather than silently falling back to the ceremony
+zone. A guest in the Azores or the Chathams is therefore the one case this does
+not handle exactly; add a curated per-zone entry in `timezone.ts` if that ever
+matters.
 
 ## Languages and address forms
 
@@ -405,21 +406,23 @@ ignores them, so a form never implies a distinction the language does not make.
 npm test
 ```
 
-185 tests: the server's 177 across five seams, plus 8 in the client.
+189 tests: the server's 176, plus 13 in the client.
 
 - `renderInvitation(input)` — pure markdown generation: languages, timezones,
   filenames, personal note placement
 - HTTP API via Fastify `inject()` — validation, status codes, PDF responses
 - Text preview — same API surface, but built with **no PDF renderer injected**,
   so a preview that reached for a browser would fail the test
-- PDF adapter — Puppeteer is injected, so only one test launches a browser
+- PDF adapter — Puppeteer is injected, so its unit tests stay fast; only its
+  real-output block and the layout probe launch a browser
 - History — real SQLite file per test, never mocked, including the reset of a
   file whose schema is not the current one
 - Client `filenameFrom` — the `Content-Disposition` contract with the server,
   parsed from a header the server really builds, so a Cyrillic guest name cannot
   silently fall back to an ASCII stand-in on its way to the downloads folder
 
-The one test that launches Chromium is the proof that real PDF bytes come out.
+The tests that launch Chromium are the proof that real PDF bytes come out, and
+that the copy is measured on a real page.
 
 `npm test` typechecks the tests before running them (`tsconfig.test.json`).
 The build config only covers `src/`, so without this step a test could pass at
@@ -436,7 +439,9 @@ docker run -p 3000:3000 -v invitations-data:/data wedding-invitations
 ```
 
 The image is multi-stage: a build stage compiles the client and server, and a
-runtime stage carries only production dependencies, Chromium and fonts.
+runtime stage carries the compiled output, Chromium and fonts. Its node_modules
+is copied from the build stage rather than reinstalled there, because
+better-sqlite3 is a native module and would need a compiler in the runtime image.
 
 - **History** is stored at `/data/history.sqlite` — mount a volume to keep it
   across redeploys. A redeploy that changes the schema replaces that file rather
@@ -481,7 +486,9 @@ on Coolify's raw IP and port is not a substitute for the webhook, because an
 ### Coolify
 
 1. **New Resource → Docker Compose**, then paste `docker-compose.coolify.yml`.
-2. Set the domain to `marry.oleg.date`. Coolify's Traefik edge terminates TLS;
+2. Set the domain to `marry.oleg.date:3000` — the port selects the port inside
+   the container, and guests still reach it on 443. A domain without it routes to
+   container port 80 and returns a 502. Coolify's Traefik edge terminates TLS;
    the service publishes no host port.
 3. Add a persistent volume mounted at `/data`, so history survives redeploys.
 4. Nothing to configure for the registry: the image is published publicly, and
