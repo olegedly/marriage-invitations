@@ -347,9 +347,18 @@ body > section.details {
  * heading rather than counting the blocks below keeps a note of any number of
  * paragraphs in that group, and survives the calls to action gaining or losing
  * one.
+ *
+ * These two are the only paragraphs on the page set flush left, and for them
+ * the measure is a width as well as a ceiling. An auto margin on a flex item
+ * turns off `align-items: stretch`, so a paragraph shorter than the measure
+ * has no floor: it shrinks to its own text and `margin: auto` then centres
+ * that narrow box, putting a one-line note in the middle of the column while
+ * the intro above it spans the measure. The blocks below are centred copy, so
+ * a narrow box is invisible on them and the ceiling alone is enough.
  */
 .details > p:first-child + p,
 .details > p:first-child + p ~ p:has(~ h2) {
+  width: var(--measure);
   font-size: var(--copy-small);
   line-height: 1.45;
 }
